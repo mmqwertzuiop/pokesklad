@@ -30,7 +30,7 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 glow-yellow">
               <Package className="h-5 w-5 text-primary" />
             </div>
-            <span className="text-lg font-bold text-gradient">PokeSklad</span>
+            <span className="text-lg font-bold text-gradient">MMpokesklad</span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
@@ -94,7 +94,7 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
               <Menu className="h-5 w-5" />
             </SheetTrigger>
             <SheetContent side="right" className="w-72 bg-background">
-              <SheetTitle className="text-gradient">PokeSklad</SheetTitle>
+              <SheetTitle className="text-gradient">MMpokesklad</SheetTitle>
               <nav className="mt-6 flex flex-col gap-1">
                 {NAV_ITEMS.map((item) => {
                   const Icon = item.icon

@@ -141,7 +141,7 @@ export default function LandingPage() {
         <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-bold">
-              Prečo <span className="text-gradient">PokeSklad</span>?
+              Prečo <span className="text-gradient">MMpokesklad</span>?
             </h2>
             <p className="mt-3 text-muted-foreground">
               Všetko čo potrebuješ na jedno miesto

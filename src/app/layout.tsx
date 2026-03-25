@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "PokeSklad | Pokemon TCG Restock Tracker",
+  title: "MMpokesklad | Pokemon TCG Restock Tracker",
   description:
     "Sleduj dostupnosť Pokémon TCG produktov na slovenských e-shopoch. ETB, Booster Boxy, Booster Packy a viac.",
   keywords: ["pokemon", "tcg", "restock", "tracker", "slovensko", "etb", "booster box"],
