@@ -7,6 +7,9 @@ import { DracikScraper } from './dracik'
 import { PompoScraper } from './pompo'
 import { BambuleScraper } from './bambule'
 import { KnihydobrovskyScraper } from './knihydobrovsky'
+import { SparkysScraper } from './sparkys'
+import { CernyrytirScraper } from './cernyrytir'
+import { SvetherScraper } from './svether'
 import { BaseScraper } from './base-scraper'
 
 const SCRAPER_MAP: Record<string, typeof BaseScraper> = {
@@ -18,6 +21,9 @@ const SCRAPER_MAP: Record<string, typeof BaseScraper> = {
   pompocz: PompoScraper as unknown as typeof BaseScraper,
   bambule: BambuleScraper as unknown as typeof BaseScraper,
   knihydobrovsky: KnihydobrovskyScraper as unknown as typeof BaseScraper,
+  sparkys: SparkysScraper as unknown as typeof BaseScraper,
+  cernyrytir: CernyrytirScraper as unknown as typeof BaseScraper,
+  svether: SvetherScraper as unknown as typeof BaseScraper,
 }
 
 export async function runAllScrapers(

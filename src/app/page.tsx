@@ -18,9 +18,9 @@ import { Footer } from '@/components/layout/footer'
 const FEATURES = [
   {
     icon: Store,
-    title: '8 retail e-shopov SK/CZ',
+    title: '11 retail e-shopov SK/CZ',
     description:
-      'Sledujeme 8 retailových e-shopov s normálnymi cenami.',
+      'Sledujeme 11 retailových e-shopov s normálnymi cenami.',
   },
   {
     icon: Zap,
@@ -54,11 +54,14 @@ const SHOPS = [
   { name: 'Nekonečno', items: '239+' },
   { name: 'iHrysko', items: '628+' },
   { name: 'Xzone', items: '331+' },
-  { name: 'Dráčik', items: '50+' },
+  { name: 'Knihy Dobrovský', items: '528+' },
   { name: 'Pompo.sk', items: '92+' },
   { name: 'Pompo.cz', items: '78+' },
+  { name: 'Sparkys', items: '50+' },
+  { name: 'Černý Rytíř', items: '100+' },
+  { name: 'Svět Her', items: '30+' },
   { name: 'Bambule', items: '12+' },
-  { name: 'Knihy Dobrovský', items: '528+' },
+  { name: 'Dráčik', items: '50+' },
 ]
 
 export default function LandingPage() {

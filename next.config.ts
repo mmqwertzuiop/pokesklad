@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
       { hostname: "bambule.cz" },
       { hostname: "knihydobrovsky.cz" },
       { hostname: "www.knihydobrovsky.cz" },
+      { hostname: "www.sparkys.cz" },
+      { hostname: "sparkys.cz" },
+      { hostname: "www.cernyrytir.cz" },
+      { hostname: "cernyrytir.cz" },
+      { hostname: "www.svet-her.cz" },
+      { hostname: "svet-her.cz" },
     ],
   },
 };
