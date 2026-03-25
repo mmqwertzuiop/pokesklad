@@ -91,9 +91,7 @@ export function ProductFilters({
             <SelectValue placeholder="Dostupnosť" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Všetky</SelectItem>
             <SelectItem value="in_stock">Skladom</SelectItem>
-            <SelectItem value="out_of_stock">Vypredané</SelectItem>
             <SelectItem value="preorder">Predobjednávka</SelectItem>
           </SelectContent>
         </Select>

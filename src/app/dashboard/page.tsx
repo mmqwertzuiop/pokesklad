@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState<FilterState>({
     category: 'all',
     shop: 'all',
-    status: 'all',
+    status: 'in_stock',
     search: '',
     sort: 'updated_at',
   })
@@ -115,10 +115,10 @@ export default function DashboardPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold sm:text-3xl">
-              <span className="text-gradient">Dashboard</span>
+              <span className="text-gradient">Dostupné produkty</span>
             </h1>
             <p className="mt-1 text-muted-foreground">
-              {total} produktov sledovaných na {shops.length || 4} e-shopoch
+              {total} produktov skladom na {shops.length || 4} e-shopoch
             </p>
           </div>
 
