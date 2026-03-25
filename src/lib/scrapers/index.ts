@@ -4,6 +4,12 @@ import { NekonecnoScraper } from './nekonecno'
 import { XzoneScraper } from './xzone'
 import { IhryskoScraper } from './ihrysko'
 import { DracikScraper } from './dracik'
+import { BubuobchodScraper } from './bubuobchod'
+import { CardstoreScraper } from './cardstore'
+import { CardempireScraper } from './cardempire'
+import { HrasScraper } from './hras'
+import { ShadowballScraper } from './shadowball'
+import { PlayingcardshopScraper } from './playingcardshop'
 import { BaseScraper } from './base-scraper'
 
 const SCRAPER_MAP: Record<string, typeof BaseScraper> = {
@@ -11,6 +17,12 @@ const SCRAPER_MAP: Record<string, typeof BaseScraper> = {
   xzone: XzoneScraper as unknown as typeof BaseScraper,
   ihrysko: IhryskoScraper as unknown as typeof BaseScraper,
   dracik: DracikScraper as unknown as typeof BaseScraper,
+  bubuobchod: BubuobchodScraper as unknown as typeof BaseScraper,
+  cardstore: CardstoreScraper as unknown as typeof BaseScraper,
+  cardempire: CardempireScraper as unknown as typeof BaseScraper,
+  hras: HrasScraper as unknown as typeof BaseScraper,
+  shadowball: ShadowballScraper as unknown as typeof BaseScraper,
+  playingcardshop: PlayingcardshopScraper as unknown as typeof BaseScraper,
 }
 
 export async function runAllScrapers(

@@ -18,9 +18,9 @@ import { Footer } from '@/components/layout/footer'
 const FEATURES = [
   {
     icon: Store,
-    title: '4 slovenské e-shopy',
+    title: '10 e-shopov SK/CZ',
     description:
-      'Sledujeme Nekonečno, Xzone, iHrysko a Dráčik v reálnom čase.',
+      'Sledujeme 10 slovenských a českých e-shopov v reálnom čase.',
   },
   {
     icon: Zap,
@@ -54,6 +54,12 @@ const SHOPS = [
   { name: 'Nekonečno', items: '239+' },
   { name: 'Xzone', items: '331+' },
   { name: 'iHrysko', items: '628+' },
+  { name: 'CardEmpire', items: '695+' },
+  { name: 'Cardstore', items: '245+' },
+  { name: 'Bubuobchod', items: '170+' },
+  { name: 'ShadowBall', items: '100+' },
+  { name: 'PlayingCardShop', items: '245+' },
+  { name: 'HRAS', items: '15+' },
   { name: 'Dráčik', items: '50+' },
 ]
 
@@ -113,7 +119,7 @@ export default function LandingPage() {
             <p className="mb-8 text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
               Sledované e-shopy
             </p>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
               {SHOPS.map((shop) => (
                 <div
                   key={shop.name}
