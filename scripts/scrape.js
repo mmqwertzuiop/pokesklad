@@ -9,8 +9,27 @@ const H = {
 const delay = ms => new Promise(r => setTimeout(r, ms));
 const CZK_EUR = 0.04;
 
-// ===== PRODUCT CLASSIFICATION =====
-const EXCL = ['album','plyšov','plush','figúrk','figurk','tričk','t-shirt','mikin','hoodie','batoh','wallet','puzzle','keychain','mug','pillow','socks','cap','blanket','sleeve','toploader','deck box','ultra pro','playmat','podložka','podlozka','coin','dice','book','kniha','dvd','nintendo','ps4','xbox','lego','funko','pokeball','lamp','poster','sticker','bottle','bag','eraser','pencil','binder','obal','ochranné','protective','card sleeves','gumička','peračník','notes','zápisník','energy card','herná podložka','hracia podložka','acrylic','graded','psa ','bgs ','jumbo','oversized','promo card','pin ','trainer toolkit','na karty','kartová','mega construx','adventný','advent calendar','build & battle','league battle','trainer box (','poškoz'];
+// STRICT: Only sealed TCG products pass through
+const EXCL = [
+  // Accessories
+  'album','binder','sleeve','toploader','deck box','ultra pro','playmat','podložka','podlozka',
+  'obal','ochranné','protective','card sleeves','na karty','kartová','display case',
+  // Toys/merch
+  'plyšov','plush','figúrk','figurk','tričk','t-shirt','mikin','hoodie','batoh','backpack',
+  'wallet','peňaženk','puzzle','keychain','kľúčenk','mug','hrnček','hrncek','pillow','vankúš',
+  'socks','ponožk','cap','čiapk','blanket','deka','lamp','poster','sticker','nálepk',
+  'bottle','fľaša','bag','taška','eraser','pencil','gumička','peračník','pero ','notes','zápisník',
+  'pokeball','funko','lego','mega construx',
+  // Non-TCG Pokemon
+  'nintendo','switch','ps4','ps5','xbox','dvd','book','kniha','kocky','dice','coin','minca',
+  'energy card','hracia podložka','herná podložka','nákupná','shopping',
+  // Graded/special
+  'acrylic','graded','psa ','bgs ','cgc ','jumbo','oversized','promo card',
+  // Non-sealed TCG
+  'pin ','trainer toolkit','build & battle','league battle','battle academy','my first battle',
+  'ex battle deck','battle deck','adventní','adventný','advent calendar',
+  'poškoz','damaged','second quality',
+];
 
 function classify(name) {
   const l = name.toLowerCase();
@@ -20,25 +39,35 @@ function classify(name) {
   if (l.includes('booster bundle')) return 'booster_bundle';
   if ((l.includes('booster box') || l.includes('booster display')) && !l.includes('bundle')) return 'booster_box';
   if (l.includes('booster') && !l.includes('box') && !l.includes('bundle') && !l.includes('display')) return 'booster_pack';
-  if (l.includes('collection') || l.includes('kolekcia') || l.match(/\btin\b/) || l.includes('blister') || l.includes('special') || l.includes('premium') || l.includes('chest') || l.includes('mini tin')) return 'collection_box';
-  return 'unknown';
+  if (l.includes('collection') || l.includes('kolekcia') || l.match(/\btin\b/) || l.includes('mini tin')
+    || l.includes('blister') || l.includes('special') || l.includes('premium')
+    || l.includes('chest') || l.includes('ex box') || l.match(/\bbox\b/)) return 'collection_box';
+  return null; // STRICT: if we can't categorize it, skip it
+}
+
+// Clean product name - remove whitespace garbage
+function cleanName(raw) {
+  return raw.replace(/\s+/g, ' ').replace(/^\d+\s*/, '').trim();
 }
 
 function parseP(t, czk) {
   if (!t) return null;
-  // Handle "€ 15,99" and "15,99 €" and "999 Kč"
-  const c = t.replace(/[^\d,.\-]/g, '').replace(',', '.');
+  const c = t.replace(/\s/g, '').replace(/[^\d,.\-]/g, '').replace(',', '.');
   const n = parseFloat(c);
-  if (isNaN(n)) return null;
+  if (isNaN(n) || n === 0) return null;
   return czk ? Math.round(n * CZK_EUR * 100) / 100 : n;
 }
 
 function stk(t) {
   const l = (t || '').toLowerCase();
-  if (l.includes('ihneď') || l.includes('ihned') || l.includes('skladom') || l.includes('skladem') || l.includes('odosielame') || l.includes('posledn') || l.includes('> 5') || l.includes('>5'))
+  if (l.includes('ihneď') || l.includes('ihned') || l.includes('skladom') || l.includes('skladem')
+    || l.includes('odosielame') || l.includes('posledn') || l.includes('> 5') || l.includes('>5'))
     { const m = t.match(/(\d+)\s*ks/i); return { s: 'in_stock', q: m ? parseInt(m[1]) : null }; }
-  if (l.includes('na ceste') || l.includes('očakávame') || l.includes('předobjed') || l.includes('predobjed') || l.includes('pripravujeme')) return { s: 'preorder', q: null };
-  if (l.includes('nedostupn') || l.includes('vypredané') || l.includes('vypredane') || l.includes('vyprodáno') || l.includes('vyprodané') || l.includes('nie je') || l.includes('objednáme') || l.includes('dlhodobo') || l.includes('momentálne')) return { s: 'out_of_stock', q: null };
+  if (l.includes('na ceste') || l.includes('očakávame') || l.includes('předobjed') || l.includes('predobjed')
+    || l.includes('pripravujeme')) return { s: 'preorder', q: null };
+  if (l.includes('nedostupn') || l.includes('vypredané') || l.includes('vypredane') || l.includes('vyprodáno')
+    || l.includes('vyprodané') || l.includes('nie je') || l.includes('objednáme') || l.includes('dlhodobo')
+    || l.includes('momentálne') || l.includes('sold out')) return { s: 'out_of_stock', q: null };
   return { s: 'unknown', q: null };
 }
 
@@ -49,10 +78,7 @@ function resolveUrl(href, base) {
   return base + (href.startsWith('/') ? '' : '/') + href;
 }
 
-// ===== SHOP SCRAPERS =====
-
-// NEKONEČNO (SK, EUR) - Shoptet platform
-// Container: .product | Name: [data-testid="productCardName"] | Price: .price-final strong | Stock: .availability
+// ===== NEKONEČNO (SK, EUR) =====
 async function scrapeNekonecno(shopId) {
   const prods = [];
   for (let pg = 1; pg <= 12; pg++) {
@@ -61,12 +87,12 @@ async function scrapeNekonecno(shopId) {
     const $ = cheerio.load(await res.text()); let f = 0;
     $('.product').each((_, el) => {
       const e = $(el);
-      const name = e.find('[data-testid="productCardName"], a.name span').first().text().trim();
+      const name = cleanName(e.find('[data-testid="productCardName"], a.name span').first().text());
       const href = e.find('a.name, a.image').first().attr('href');
       if (!name || !href) return; const cat = classify(name); if (!cat) return;
       const img = e.find('.p a.image img').attr('src') || e.find('img').first().attr('data-src');
       const price = parseP(e.find('.price-final strong').text() || e.find('.prices strong').first().text(), false);
-      const { s, q } = stk(e.find('.availability').text().trim());
+      const { s, q } = stk(e.find('.availability').text());
       prods.push({ shop_id: shopId, name, url: 'https://www.nekonecno.sk' + href, image_url: img || null, category: cat, current_price: price, current_stock_status: s, current_stock_quantity: q });
       f++;
     });
@@ -75,8 +101,7 @@ async function scrapeNekonecno(shopId) {
   return prods;
 }
 
-// IHRYSKO (SK, EUR)
-// Container: .product-thumb | Name: .product-thumb__name | Price: .product-thumb__price | Stock: .product-thumb__availability
+// ===== IHRYSKO (SK, EUR) =====
 async function scrapeIhrysko(shopId) {
   const prods = [];
   for (let pg = 1; pg <= 20; pg++) {
@@ -85,14 +110,14 @@ async function scrapeIhrysko(shopId) {
     const $ = cheerio.load(await res.text()); let f = 0;
     $('.product-thumb').each((_, el) => {
       const e = $(el);
-      const name = e.find('.product-thumb__name').text().trim();
+      const name = cleanName(e.find('.product-thumb__name').text());
       const href = e.find('.product-thumb__name a').attr('href');
       if (!name || !href) return; const cat = classify(name); if (!cat) return;
       let img = e.find('.product-thumb__img img').attr('data-src') || null;
       if (img) img = resolveUrl(img, 'https://www.ihrysko.sk');
-      if (img && img.includes('loading')) img = null;
+      if (img && (img.includes('loading') || img.includes('data:'))) img = null;
       const price = parseP(e.find('.product-thumb__price .actual-price, .product-thumb__price').first().text(), false);
-      const { s, q } = stk(e.find('.product-thumb__availability').first().text().trim());
+      const { s, q } = stk(e.find('.product-thumb__availability').first().text());
       prods.push({ shop_id: shopId, name, url: href, image_url: img, category: cat, current_price: price, current_stock_status: s, current_stock_quantity: q });
       f++;
     });
@@ -101,8 +126,7 @@ async function scrapeIhrysko(shopId) {
   return prods;
 }
 
-// XZONE (SK, EUR)
-// Container: .item-wrapper | Price: .price | Stock: .expedice-date | Name from link text
+// ===== XZONE (SK, EUR) =====
 async function scrapeXzone(shopId) {
   const prods = [];
   for (let pg = 1; pg <= 8; pg++) {
@@ -112,12 +136,12 @@ async function scrapeXzone(shopId) {
     $('.item-wrapper').each((_, el) => {
       const e = $(el);
       const link = e.find('a[href*="xzone"]').first();
+      const name = cleanName(link.attr('title') || e.find('.item-title').text());
       const href = link.attr('href');
-      const name = link.attr('title') || e.find('.item-title').text().trim() || link.text().trim();
       if (!name || !href || name.length < 5) return; const cat = classify(name); if (!cat) return;
-      const img = e.find('img').first().attr('src') || e.find('img').first().attr('data-src');
+      const img = e.find('img').first().attr('src');
       const price = parseP(e.find('.price').first().text(), false);
-      const { s, q } = stk(e.find('.expedice-date').text().trim());
+      const { s, q } = stk(e.find('.expedice-date').text());
       prods.push({ shop_id: shopId, name, url: href, image_url: img || null, category: cat, current_price: price, current_stock_status: s, current_stock_quantity: q });
       f++;
     });
@@ -126,74 +150,81 @@ async function scrapeXzone(shopId) {
   return prods;
 }
 
-// DRÁČIK (SK, EUR) - custom platform
-// Container: .ProductCard | Name: [class*=Name] | Price: [class*=price] text with "€" | Stock: [class*=stock]
+// ===== DRÁČIK (SK, EUR) =====
 async function scrapeDracik(shopId) {
   const prods = [];
   const res = await fetch('https://www.dracik.sk/pokemon-1076/', { headers: H }); if (!res.ok) return prods;
   const $ = cheerio.load(await res.text());
   $('.ProductCard').each((_, el) => {
     const e = $(el);
-    const name = e.find('[class*="Name"], [class*="name"], h2, h3').first().text().trim();
+    const name = cleanName(e.find('[class*="Name"], h2, h3').first().text());
     const href = e.find('a').first().attr('href');
     if (!name || !href) return; const cat = classify(name); if (!cat) return;
     const imgSrc = e.find('img').first().attr('src');
     const img = imgSrc ? resolveUrl(imgSrc, 'https://www.dracik.sk') : null;
-    const priceText = e.find('[class*="price"], [class*="Price"]').first().text().trim();
-    const price = parseP(priceText, false);
-    const { s, q } = stk(e.find('[class*="stock"], [class*="Stock"], [class*="avail"]').first().text().trim());
+    const price = parseP(e.find('[class*="rice"]').first().text(), false);
+    const { s, q } = stk(e.find('[class*="tock"], [class*="vail"]').first().text());
     prods.push({ shop_id: shopId, name, url: resolveUrl(href, 'https://www.dracik.sk'), image_url: img, category: cat, current_price: price, current_stock_status: s, current_stock_quantity: q });
   });
   return prods;
 }
 
-// POMPO SK (SK, EUR)
-// Pokemon products in .catalog-outer with links containing "pokemon"
+// ===== POMPO SK (SK, EUR) - Check each product's actual stock =====
 async function scrapePompoSk(shopId) {
   const prods = [], seen = new Set();
   const res = await fetch('https://www.pompo.sk/pokemon-tcg', { headers: H }); if (!res.ok) return prods;
   const $ = cheerio.load(await res.text());
-  $('a[href*="pokemon"]').each((_, el) => {
+  $('a[href*="pokemon"][href*="_z"]').each((_, el) => {
     const a = $(el);
     const href = a.attr('href');
-    if (!href || !href.includes('_z')) return; // only product links
+    if (!href) return;
     const fullUrl = resolveUrl(href, 'https://www.pompo.sk');
     if (seen.has(fullUrl)) return; seen.add(fullUrl);
     const parent = a.closest('.catalog-outer, .catalog');
-    const name = parent.find('strong, b, h3').first().text().trim() || a.text().trim();
+    // Get clean name from the strong/b tag inside, NOT the entire text block
+    const nameEl = parent.find('strong').first().text().trim() || parent.find('b').first().text().trim();
+    const name = cleanName(nameEl || a.text());
     if (!name || name.length < 5) return; const cat = classify(name); if (!cat) return;
     const img = parent.find('img').first().attr('src') || null;
-    const priceMatch = parent.text().match(/([\d,]+)\s*€/g);
-    const price = priceMatch ? parseP(priceMatch[priceMatch.length - 1], false) : null; // last price = current
-    prods.push({ shop_id: shopId, name, url: fullUrl, image_url: img, category: cat, current_price: price, current_stock_status: 'in_stock', current_stock_quantity: null }); // Pompo only shows available
+    // Get last EUR price (current price, not DMOC)
+    const allPrices = parent.text().match(/[\d,]+\s*€/g) || [];
+    const price = allPrices.length > 0 ? parseP(allPrices[allPrices.length - 1], false) : null;
+    // Check actual stock from page text
+    const parentText = parent.text().toLowerCase();
+    const stockOnline = parentText.includes('skladom online') || parentText.includes('skladem online');
+    prods.push({ shop_id: shopId, name, url: fullUrl, image_url: img, category: cat, current_price: price,
+      current_stock_status: stockOnline ? 'in_stock' : 'out_of_stock', current_stock_quantity: null });
   });
   return prods;
 }
 
-// POMPO CZ (CZ, CZK → EUR)
+// ===== POMPO CZ (CZ, CZK → EUR) =====
 async function scrapePompoCz(shopId) {
   const prods = [], seen = new Set();
   const res = await fetch('https://www.pompo.cz/pokemon-tcg', { headers: H }); if (!res.ok) return prods;
   const $ = cheerio.load(await res.text());
-  $('a[href*="pokemon"]').each((_, el) => {
+  $('a[href*="pokemon"][href*="_z"]').each((_, el) => {
     const a = $(el);
     const href = a.attr('href');
-    if (!href || !href.includes('_z')) return;
+    if (!href) return;
     const fullUrl = resolveUrl(href, 'https://www.pompo.cz');
     if (seen.has(fullUrl)) return; seen.add(fullUrl);
     const parent = a.closest('.catalog-outer, .catalog');
-    const name = parent.find('strong, b, h3').first().text().trim() || a.text().trim();
+    const nameEl = parent.find('strong').first().text().trim() || parent.find('b').first().text().trim();
+    const name = cleanName(nameEl || a.text());
     if (!name || name.length < 5) return; const cat = classify(name); if (!cat) return;
     const img = parent.find('img').first().attr('src') || null;
-    const priceMatch = parent.text().match(/([\d\s]+)\s*Kč/g);
-    const price = priceMatch ? parseP(priceMatch[priceMatch.length - 1], true) : null;
-    prods.push({ shop_id: shopId, name, url: fullUrl, image_url: img, category: cat, current_price: price, current_stock_status: 'in_stock', current_stock_quantity: null });
+    const allPrices = parent.text().match(/[\d\s]+\s*Kč/g) || [];
+    const price = allPrices.length > 0 ? parseP(allPrices[allPrices.length - 1], true) : null;
+    const parentText = parent.text().toLowerCase();
+    const stockOnline = parentText.includes('skladom online') || parentText.includes('skladem online');
+    prods.push({ shop_id: shopId, name, url: fullUrl, image_url: img, category: cat, current_price: price,
+      current_stock_status: stockOnline ? 'in_stock' : 'out_of_stock', current_stock_quantity: null });
   });
   return prods;
 }
 
-// BAMBULE (CZ, CZK → EUR)
-// Container: [class*="ProductCard"] | Name: [class*="title"] a | Price: [class*="Price"] | Stock: [class*="Stock"]
+// ===== BAMBULE (CZ, CZK → EUR) =====
 async function scrapeBambule(shopId) {
   const prods = [], seen = new Set();
   const res = await fetch('https://www.bambule.cz/pokemon-tcg', { headers: H }); if (!res.ok) return prods;
@@ -201,7 +232,7 @@ async function scrapeBambule(shopId) {
   $('[class*="ProductCard"]').each((_, el) => {
     const e = $(el);
     const link = e.find('[class*="title"] a').first();
-    const href = link.attr('href'); const name = link.text().trim();
+    const href = link.attr('href'); const name = cleanName(link.text());
     if (!name || !href) return;
     const fullUrl = 'https://www.bambule.cz' + href;
     if (seen.has(fullUrl)) return; seen.add(fullUrl);
@@ -210,13 +241,13 @@ async function scrapeBambule(shopId) {
     const srcs = srcset.split(',').map(s => s.trim().split(' ')[0]).filter(s => s && !s.includes('data:'));
     const img = srcs.length > 0 ? srcs[srcs.length - 1] : null;
     const price = parseP(e.find('[class*="Price"]').first().text(), true);
-    const { s, q } = stk(e.find('[class*="Stock"]').first().text().trim());
+    const { s, q } = stk(e.find('[class*="Stock"]').first().text());
     prods.push({ shop_id: shopId, name, url: fullUrl, image_url: img, category: cat, current_price: price, current_stock_status: s, current_stock_quantity: q });
   });
   return prods;
 }
 
-// KNIHY DOBROVSKÝ (CZ, CZK → EUR)
+// ===== KNIHY DOBROVSKÝ (CZ, CZK → EUR) =====
 async function scrapeKnihy(shopId) {
   const prods = [], seen = new Set();
   const res = await fetch('https://knihydobrovsky.cz/pokemon-tcg', { headers: H }); if (!res.ok) return prods;
@@ -227,32 +258,27 @@ async function scrapeKnihy(shopId) {
     if (!href) return;
     const fullUrl = resolveUrl(href, 'https://knihydobrovsky.cz');
     if (seen.has(fullUrl)) return; seen.add(fullUrl);
-    const parent = a.closest('li, [class*="product"], [class*="item"]') || a.parent().parent();
-    const name = parent.find('h3, [class*="title"]').text().trim() || a.text().trim();
+    const parent = a.closest('li, [class*="product"], [class*="item"]');
+    const name = cleanName(parent.find('h3').text() || a.text());
     if (!name || name.length < 5) return; const cat = classify(name); if (!cat) return;
-    const img = parent.find('img').first().attr('src') || null;
-    const imgUrl = img ? resolveUrl(img, 'https://knihydobrovsky.cz') : null;
+    const imgSrc = parent.find('img').first().attr('src');
+    const img = imgSrc ? resolveUrl(imgSrc, 'https://knihydobrovsky.cz') : null;
     const priceMatch = parent.text().match(/(\d[\d\s]*)\s*Kč/);
-    const price = priceMatch ? parseP(priceMatch[1].replace(/\s/g, ''), true) : null;
-    // If "Do košíku" button exists = in stock
-    const hasCart = parent.text().includes('Do košíku') || parent.find('button, [class*="cart"]').length > 0;
-    prods.push({ shop_id: shopId, name, url: fullUrl, image_url: imgUrl, category: cat, current_price: price, current_stock_status: hasCart ? 'in_stock' : 'unknown', current_stock_quantity: null });
+    const price = priceMatch ? parseP(priceMatch[1], true) : null;
+    const hasCart = parent.text().includes('Do košíku');
+    const hasSupplier = parent.text().includes('dodavatele');
+    prods.push({ shop_id: shopId, name, url: fullUrl, image_url: img, category: cat, current_price: price,
+      current_stock_status: hasCart ? 'in_stock' : (hasSupplier ? 'preorder' : 'out_of_stock'), current_stock_quantity: null });
   });
   return prods;
 }
 
 const SCRAPERS = {
-  nekonecno: scrapeNekonecno,
-  ihrysko: scrapeIhrysko,
-  xzone: scrapeXzone,
-  dracik: scrapeDracik,
-  pomposk: scrapePompoSk,
-  pompocz: scrapePompoCz,
-  bambule: scrapeBambule,
-  knihydobrovsky: scrapeKnihy,
+  nekonecno: scrapeNekonecno, ihrysko: scrapeIhrysko, xzone: scrapeXzone,
+  dracik: scrapeDracik, pomposk: scrapePompoSk, pompocz: scrapePompoCz,
+  bambule: scrapeBambule, knihydobrovsky: scrapeKnihy,
 };
 
-// ===== MAIN =====
 async function main() {
   const { data: shops } = await supabase.from('shops').select('id, slug, name').eq('is_active', true);
   const sm = {}; shops.forEach(s => sm[s.slug] = { id: s.id, name: s.name });
@@ -261,35 +287,30 @@ async function main() {
 
   for (const [slug, fn] of Object.entries(SCRAPERS)) {
     if (!sm[slug]) continue;
-    const shop = sm[slug];
-    console.log(`Scraping ${shop.name}...`);
+    console.log(`Scraping ${sm[slug].name}...`);
     try {
-      const products = await fn(shop.id);
+      const products = await fn(sm[slug].id);
       console.log(`  ${products.length} products`);
       totalProducts += products.length;
 
-      // Fix missing images for in-stock products
       for (const p of products) {
+        // Fix missing images for in-stock products
         if (!p.image_url && p.current_stock_status === 'in_stock') {
           try {
             const r = await fetch(p.url, { headers: H }); if (!r.ok) continue;
             const $ = cheerio.load(await r.text());
-            let img = $('meta[property="og:image"]').attr('content') || $('[class*="gallery"] img, [class*="product"] img, .detail img').first().attr('src');
-            if (img && !img.includes('data:')) { p.image_url = resolveUrl(img, new URL(p.url).origin); }
-            await delay(800);
+            let img = $('meta[property="og:image"]').attr('content');
+            if (img && !img.includes('data:')) p.image_url = img;
+            await delay(500);
           } catch {}
         }
-      }
 
-      // Save to DB with restock detection
-      for (const p of products) {
         const norm = p.name.toLowerCase().replace(/pokémon/g, 'pokemon').replace(/pokemon\s*tcg:?\s*/g, '').replace(/\s+/g, ' ').trim();
         const { data: existing } = await supabase.from('products')
           .select('id, current_stock_status, current_price, image_url')
           .eq('shop_id', p.shop_id).eq('url', p.url).single();
 
         if (existing) {
-          // RESTOCK DETECTION
           if (existing.current_stock_status !== 'in_stock' && p.current_stock_status === 'in_stock') {
             await supabase.from('stock_transitions').insert({
               product_id: existing.id, previous_status: existing.current_stock_status,
@@ -317,7 +338,7 @@ async function main() {
     }
   }
 
-  // Send notifications for restocks
+  // Notifications
   if (totalRestocks > 0) {
     const { data: transitions } = await supabase.from('stock_transitions')
       .select('*, product:products(*)').eq('notification_sent', false).eq('new_status', 'in_stock');
