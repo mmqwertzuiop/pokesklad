@@ -11,10 +11,10 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 
 const PRICE_COMPARISONS = [
-  { name: 'Prismatic Evolutions ETB', retail: 49.99, resell: 149, savings: 99, img: '🔥' },
-  { name: 'Ascended Heroes ETB', retail: 59.99, resell: 119, savings: 59, img: '⚡' },
-  { name: 'Mega Evolution Booster Box', retail: 159.99, resell: 249, savings: 89, img: '📦' },
-  { name: 'Perfect Order ETB', retail: 59.99, resell: 89, savings: 29, img: '✨' },
+  { name: 'Prismatic Evolutions ETB', retail: 49.99, resell: 199, savings: 149, img: '🔥' },
+  { name: 'Ascended Heroes ETB', retail: 59.99, resell: 139, savings: 79, img: '⚡' },
+  { name: 'Pokémon 151 ETB', retail: 49.99, resell: 389, savings: 339, img: '💎' },
+  { name: 'Perfect Order ETB', retail: 59.99, resell: 99, savings: 39, img: '✨' },
 ]
 
 const TIMELINE = [
@@ -42,7 +42,7 @@ export default function LandingPage() {
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
               Prismatic Evolutions ETB.<br />
               Retail cena: <span className="text-emerald-400">49.99€</span><br />
-              Resell cena: <span className="text-red-400 line-through decoration-2">149€</span>
+              Resell cena: <span className="text-red-400 line-through decoration-2">199€</span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
@@ -189,10 +189,15 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-8">
-              <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground/40">8 retail e-shopov</p>
+              <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground/40">Sledované retail e-shopy</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {['Nekonečno', 'iHrysko', 'Dráčik', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
-                  <span key={s} className="rounded-full border border-border/15 bg-card/20 px-3 py-1 text-xs text-muted-foreground/60">{s}</span>
+                  <span key={s} className="rounded-full border border-emerald-500/15 bg-emerald-500/5 px-3 py-1 text-xs text-emerald-400/70">{s}</span>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                {['Smarty', 'Brloh', 'Alza'].map(s => (
+                  <span key={s} className="rounded-full border border-amber-500/15 bg-amber-500/5 px-3 py-1 text-xs text-amber-400/70">{s} - čoskoro</span>
                 ))}
               </div>
             </div>
