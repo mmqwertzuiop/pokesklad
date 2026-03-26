@@ -96,7 +96,7 @@ const COMPARISONS = [
 
 const TIMELINE = [
   { time: '14:02', text: 'Nekonečno doskladní Prismatic Evolutions ETB za 49.99€', type: 'restock' },
-  { time: '14:03', text: 'MMpokesklad detekuje zmenu stavu', type: 'detect' },
+  { time: '14:03', text: 'MMpokebot detekuje zmenu stavu', type: 'detect' },
   { time: '14:04', text: 'Premium používatelia dostanú notifikáciu', type: 'notify' },
   { time: '14:07', text: 'Produkt sa začína vypredávať', type: 'warn' },
   { time: '14:25', text: 'Vypredané. Resell cena: 199€', type: 'sold' },

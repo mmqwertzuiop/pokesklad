@@ -25,7 +25,7 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
             <Package className="h-4 w-4 text-primary" />
           </div>
           <span className="text-base font-bold tracking-tight">
-            <span className="text-gradient">MM</span><span className="text-foreground/80">pokesklad</span>
+            <span className="text-gradient">MM</span><span className="text-foreground/80">pokebot</span>
           </span>
         </Link>
 
@@ -79,7 +79,7 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
               <Menu className="h-5 w-5" />
             </SheetTrigger>
             <SheetContent side="right" className="w-64 bg-background">
-              <SheetTitle className="text-gradient">MMpokesklad</SheetTitle>
+              <SheetTitle className="text-gradient">MMpokebot</SheetTitle>
               <nav className="mt-6 flex flex-col gap-1">
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground">
                   Skladom
