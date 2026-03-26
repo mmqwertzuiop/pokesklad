@@ -90,7 +90,8 @@ async function scrapeNekonecno(shopId) {
       const name = cleanName(e.find('[data-testid="productCardName"], a.name span').first().text());
       const href = e.find('a.name, a.image').first().attr('href');
       if (!name || !href) return; const cat = classify(name); if (!cat) return;
-      const img = e.find('.p a.image img').attr('src') || e.find('img').first().attr('data-src');
+      let img = e.find('.p a.image img').attr('src') || e.find('img').first().attr('data-src') || e.find('img').first().attr('src');
+      if (img && (img.includes('data:') || img.includes('svg+xml'))) img = null;
       const price = parseP(e.find('.price-final strong').text() || e.find('.prices strong').first().text(), false);
       const { s, q } = stk(e.find('.availability').text());
       prods.push({ shop_id: shopId, name, url: 'https://www.nekonecno.sk' + href, image_url: img || null, category: cat, current_price: price, current_stock_status: s, current_stock_quantity: q });
