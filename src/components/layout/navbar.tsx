@@ -2,53 +2,30 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, LayoutDashboard, Heart, Settings, Menu } from 'lucide-react'
+import { LayoutDashboard, Heart, Settings, Menu, Bell } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { NotificationBell } from '@/components/notifications/notification-bell'
-
-const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Skladom', icon: LayoutDashboard },
-]
 
 export function Navbar({ user }: { user?: { email: string } | null }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b bg-[#080412]/80 backdrop-blur-xl" style={{ borderColor: 'rgba(139,92,246,0.1)' }}>
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-            <Package className="h-4 w-4 text-primary" />
-          </div>
-          <span className="text-base font-bold tracking-tight">
-            <span className="text-gradient">MM</span><span className="text-foreground/80">pokebot</span>
-          </span>
+        <Link href="/" className="flex items-center gap-1.5">
+          <span className="text-xl font-black tracking-wide text-white" style={{ fontFamily: 'Bebas Neue' }}>MM</span>
+          <span className="text-xl tracking-wide logo-outline" style={{ fontFamily: 'Bebas Neue' }}>POKEBOT</span>
         </Link>
 
-        {/* Center nav */}
+        {/* Center */}
         <nav className="hidden items-center gap-1 md:flex">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname.startsWith(item.href)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 font-medium text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {item.label}
-              </Link>
-            )
-          })}
+          <Link href="/dashboard" className={`rounded-lg px-3 py-1.5 text-xs font-medium font-label transition-colors ${pathname.startsWith('/dashboard') ? 'bg-[rgba(139,92,246,0.15)] text-[#a78bfa]' : 'text-[#64748b] hover:text-[#94a3b8]'}`}>
+            SKLADOM
+          </Link>
         </nav>
 
         {/* Right */}
@@ -56,42 +33,26 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
           {user ? (
             <>
               <NotificationBell />
-              <Link href="/watchlist" className="hidden text-muted-foreground hover:text-foreground md:block">
-                <Heart className="h-4 w-4" />
-              </Link>
-              <Link href="/settings" className="hidden text-muted-foreground hover:text-foreground md:block">
-                <Settings className="h-4 w-4" />
-              </Link>
+              <Link href="/settings" className="text-[#64748b] hover:text-[#a78bfa]"><Settings className="h-4 w-4" /></Link>
             </>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
-              <Button variant="ghost" size="sm" className="text-xs" render={<Link href="/login" />}>
-                Prihlásiť sa
-              </Button>
-              <Button size="sm" className="text-xs" render={<Link href="/register" />}>
-                Registrácia
-              </Button>
+              <Button variant="ghost" size="sm" className="text-xs font-label text-[#64748b]" render={<Link href="/login" />}>PRIHLÁSIŤ</Button>
+              <Button size="sm" className="text-xs font-label bg-[#8b5cf6] hover:bg-[#7c3aed] text-white" render={<Link href="/register" />}>REGISTRÁCIA</Button>
             </div>
           )}
-
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger className="md:hidden" render={<Button variant="ghost" size="icon" />}>
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 text-[#64748b]" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-64 bg-background">
-              <SheetTitle className="text-gradient">MMpokebot</SheetTitle>
+            <SheetContent side="right" className="w-64" style={{ background: '#0d0820' }}>
+              <SheetTitle className="font-heading text-xl text-white">MMPOKEBOT</SheetTitle>
               <nav className="mt-6 flex flex-col gap-1">
-                <Link href="/dashboard" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground">
-                  Skladom
-                </Link>
+                <Link href="/dashboard" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-[#94a3b8] hover:text-white">Skladom</Link>
                 {!user && (
-                  <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
-                    <Button variant="ghost" size="sm" render={<Link href="/login" onClick={() => setOpen(false)} />}>
-                      Prihlásiť sa
-                    </Button>
-                    <Button size="sm" render={<Link href="/register" onClick={() => setOpen(false)} />}>
-                      Registrácia
-                    </Button>
+                  <div className="mt-4 flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(139,92,246,0.15)' }}>
+                    <Button variant="ghost" size="sm" render={<Link href="/login" onClick={() => setOpen(false)} />}>Prihlásiť</Button>
+                    <Button size="sm" className="bg-[#8b5cf6] text-white" render={<Link href="/register" onClick={() => setOpen(false)} />}>Registrácia</Button>
                   </div>
                 )}
               </nav>

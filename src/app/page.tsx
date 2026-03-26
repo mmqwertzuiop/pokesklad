@@ -1,38 +1,54 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
-import { useRef } from 'react'
-import {
-  ArrowRight, Bell, ChevronRight, Check, X,
-  ExternalLink, Store, Clock, Zap,
-} from 'lucide-react'
+import { ArrowRight, Bell, ChevronRight, Check, X, ExternalLink, Store, Clock, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import type { Product } from '@/types/product'
-import { CATEGORY_LABELS } from '@/lib/constants'
 
 function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
+  return <motion.div ref={ref} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay }} className={className}>{children}</motion.div>
+}
+
+function Particles() {
   return (
-    <motion.div ref={ref} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.45, delay, ease: 'easeOut' }} className={className}>
-      {children}
-    </motion.div>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {Array.from({ length: 20 }).map((_, i) => (
+        <div key={i} className="particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 6}s`, animationDuration: `${4 + Math.random() * 4}s` }} />
+      ))}
+    </div>
   )
 }
 
-function timeAgo(date: string) {
-  const diff = Date.now() - new Date(date).getTime()
-  const min = Math.floor(diff / 60000)
-  if (min < 60) return `${min} min`
-  const hrs = Math.floor(min / 60)
-  if (hrs < 24) return `${hrs}h`
-  return `${Math.floor(hrs / 24)}d`
+function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
+  const [val, setVal] = useState(0)
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true })
+  useEffect(() => { if (!inView) return; let s = 0; const step = Math.ceil(target / 35); const t = setInterval(() => { s += step; if (s >= target) { setVal(target); clearInterval(t) } else setVal(s) }, 25); return () => clearInterval(t) }, [inView, target])
+  return <span ref={ref}>{val.toLocaleString()}{suffix}</span>
 }
+
+function timeAgo(date: string) { const d = Date.now() - new Date(date).getTime(); const m = Math.floor(d/60000); if(m<60) return `${m}m`; const h = Math.floor(m/60); if(h<24) return `${h}h`; return `${Math.floor(h/24)}d` }
+
+const COMPARISONS = [
+  { name: 'Prismatic Evolutions ETB', retail: 49.99, resell: 199 },
+  { name: 'Pokémon 151 ETB', retail: 49.99, resell: 389 },
+  { name: 'Ascended Heroes ETB', retail: 59.99, resell: 139 },
+  { name: 'Perfect Order ETB', retail: 59.99, resell: 99 },
+]
+
+const FAQ = [
+  { q: 'Ako rýchlo dostanem notifikáciu?', a: 'Premium: do 5 minút od doskladnenia. Free: dashboard s 30 min oneskorením.' },
+  { q: 'Ktoré e-shopy sledujete?', a: 'Alza, Nekonečno, iHrysko, Dráčik, Smarty, Brloh, Xzone, Pompo.sk, Pompo.cz, Bambule a Knihy Dobrovský.' },
+  { q: 'Prečo len retail?', a: 'Retail shopy predávajú za MSRP. Reselleri navyšujú 2-3x. My sledujeme len retail.' },
+  { q: 'Čo sledujete?', a: 'Sealed TCG: ETB, Booster Boxy, Packy, Bundle, Collection Boxy, Tins.' },
+]
 
 export default function LandingPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -40,93 +56,90 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useEffect(() => {
-    fetch('/api/products?status=in_stock&limit=12&sort=updated_at&order=desc')
-      .then(r => r.json())
-      .then(d => { setProducts(d.products || []); setLoading(false) })
-      .catch(() => setLoading(false))
+    fetch('/api/products?status=in_stock&limit=8&sort=updated_at&order=desc')
+      .then(r => r.json()).then(d => { setProducts(d.products || []); setLoading(false) }).catch(() => setLoading(false))
   }, [])
-
-  const totalSavings = 606
 
   return (
     <>
       <Navbar />
       <main className="flex-1">
 
-        {/* ===== HERO - straight to the point ===== */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_0%,oklch(0.88_0.17_88_/_0.05),transparent)]" />
-          <div className="relative mx-auto max-w-5xl px-4 pb-6 pt-14 sm:px-6 sm:pt-20">
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center">
+        {/* HERO */}
+        <section className="relative overflow-hidden bg-glow">
+          <Particles />
+          <div className="relative mx-auto max-w-5xl px-4 pb-8 pt-16 sm:px-6 sm:pt-24">
+            <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center">
 
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-500/5 px-3 py-1 text-[11px] text-emerald-400">
-                <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" /></span>
-                Práve teraz monitorujeme 11 e-shopov
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-label text-[10px] uppercase tracking-wider card-v" style={{ color: '#22c55e' }}>
+                <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#22c55e]" /></span>
+                MONITORING 11 E-SHOPOV
               </div>
 
-              <h1 className="mx-auto max-w-2xl text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl">
-                Kúp Pokémon TCG za retail,<br className="hidden sm:block" />
-                nie za resell
+              <h1 className="font-heading text-5xl text-white sm:text-6xl lg:text-7xl">
+                KÚP ZA{' '}
+                <span className="price-green">RETAIL</span>
+                <br />
+                NIE ZA{' '}
+                <span className="price-red line-through decoration-2">RESELL</span>
               </h1>
 
-              <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
-                Kontrolujeme 11 e-shopov každých 5 minút. Keď sa vypredaný
-                produkt objaví skladom, dostaneš notifikáciu.
+              <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-[#94a3b8]">
+                Kontrolujeme 11 slovenských a českých e-shopov každých 5 minút.
+                Keď sa vypredaný produkt objaví skladom, dostaneš notifikáciu.
               </p>
 
-              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                <Button size="lg" className="h-11 gap-2 px-7 text-sm font-bold shadow-lg shadow-primary/15" render={<Link href="/register" />}>
-                  <Bell className="h-3.5 w-3.5" /> Chcem notifikácie pri doskladnení
+              <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <Button size="lg" className="h-12 gap-2 px-8 font-label text-xs uppercase tracking-wider bg-[#8b5cf6] hover:bg-[#7c3aed] text-white shadow-lg shadow-[#8b5cf6]/20" render={<Link href="/register" />}>
+                  <Bell className="h-3.5 w-3.5" /> CHCEM NOTIFIKÁCIE
+                </Button>
+                <Button size="lg" variant="outline" className="h-12 gap-2 px-6 font-label text-xs uppercase tracking-wider text-[#a78bfa] hover:text-white" style={{ borderColor: 'rgba(139,92,246,0.25)' }} render={<Link href="/dashboard" />}>
+                  POZRIEŤ DASHBOARD <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <p className="mt-3 text-[11px] text-muted-foreground/30">Zadarmo. Bez kreditnej karty.</p>
             </motion.div>
           </div>
         </section>
 
-        {/* ===== LIVE PRODUCTS - real data, not mock ===== */}
-        <section className="mx-auto max-w-5xl px-4 pb-16 pt-8 sm:px-6">
+        {/* LIVE PRODUCTS */}
+        <section className="mx-auto max-w-5xl px-4 pb-16 pt-10 sm:px-6">
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" /></span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400/70">Práve skladom</span>
+              <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#22c55e]" /></span>
+              <span className="font-label text-[10px] uppercase tracking-wider text-[#22c55e]">PRÁVE SKLADOM</span>
             </div>
-            <Link href="/dashboard" className="flex items-center gap-1 text-xs text-muted-foreground/40 transition-colors hover:text-primary">
-              Všetky produkty <ChevronRight className="h-3 w-3" />
+            <Link href="/dashboard" className="flex items-center gap-1 font-label text-[10px] uppercase tracking-wider text-[#64748b] hover:text-[#a78bfa]">
+              VŠETKY <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="animate-pulse rounded-xl border border-border/5 bg-card/10">
-                  <div className="aspect-[4/3] bg-muted/5" />
-                  <div className="space-y-2 p-3"><div className="h-3 w-3/4 rounded bg-muted/5" /><div className="h-4 w-16 rounded bg-muted/5" /></div>
-                </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-xl card-v"><div className="aspect-[4/3]" style={{ background: 'rgba(139,92,246,0.04)' }} /><div className="p-3 space-y-2"><div className="h-3 w-3/4 rounded" style={{ background: 'rgba(139,92,246,0.06)' }} /><div className="h-4 w-16 rounded" style={{ background: 'rgba(139,92,246,0.06)' }} /></div></div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {products.slice(0, 8).map((p, i) => (
                 <FadeIn key={p.id} delay={i * 0.05}>
-                  <div className="group overflow-hidden rounded-xl border border-border/8 bg-card/15 transition-all duration-300 hover:border-primary/15 hover:shadow-[0_0_30px_-8px] hover:shadow-primary/8">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-muted/5 to-transparent">
+                  <div className="group overflow-hidden rounded-xl card-v card-v-hover transition-all duration-300">
+                    <div className="relative aspect-[4/3] overflow-hidden" style={{ background: 'rgba(139,92,246,0.03)' }}>
                       {p.image_url ? (
                         <Image src={p.image_url} alt={p.name} fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" sizes="25vw" unoptimized />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-3xl text-muted-foreground/5">?</div>
+                        <div className="flex h-full items-center justify-center text-3xl text-[#8b5cf6]/10">?</div>
                       )}
                     </div>
                     <div className="p-3">
-                      <div className="mb-1 flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
-                        <Store className="h-2.5 w-2.5" />{(p.shop as any)?.name}
-                        <span className="ml-auto"><Clock className="mr-0.5 inline h-2.5 w-2.5" />{timeAgo(p.updated_at)}</span>
+                      <div className="mb-1 flex items-center gap-1 font-label text-[8px] uppercase tracking-wider text-[#64748b]">
+                        <Store className="h-2 w-2" />{(p.shop as any)?.name}
                       </div>
-                      <h3 className="line-clamp-2 text-[12px] font-semibold leading-snug">{p.name}</h3>
+                      <h3 className="line-clamp-2 text-[11px] font-semibold leading-snug text-[#e2e8f0]">{p.name}</h3>
                       <div className="mt-2 flex items-end justify-between">
-                        <span className="text-lg font-extrabold tabular-nums">{p.current_price?.toFixed(2)}<span className="text-[10px] font-normal text-muted-foreground/40">€</span></span>
-                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/20">
-                          Kúpiť <ExternalLink className="h-2.5 w-2.5" />
+                        <span className="text-lg font-black tabular-nums price-green">{p.current_price?.toFixed(2)}<span className="text-[9px] font-normal text-[#64748b]">€</span></span>
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-md px-2 py-1 font-label text-[8px] uppercase tracking-wider text-[#a78bfa] transition-colors hover:bg-[rgba(139,92,246,0.15)]">
+                          KÚPIŤ <ExternalLink className="h-2 w-2" />
                         </a>
                       </div>
                     </div>
@@ -135,40 +148,26 @@ export default function LandingPage() {
               ))}
             </div>
           )}
-
-          {!loading && products.length > 8 && (
-            <div className="mt-5 text-center">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" render={<Link href="/dashboard" />}>
-                Zobraziť všetkých {products.length}+ produktov <ArrowRight className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
         </section>
 
-        {/* ===== THE MATH - why it makes sense ===== */}
-        <section className="border-y border-border/8 bg-card/5">
+        {/* PRICE COMPARISON */}
+        <section style={{ borderTop: '1px solid rgba(139,92,246,0.08)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
           <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
             <FadeIn>
-              <h2 className="text-center text-xl font-extrabold sm:text-2xl">
-                Jeden úspešný nákup za retail a ušetríš viac<br className="hidden sm:block" /> než stojí rok Premium
-              </h2>
+              <p className="mb-2 text-center font-label text-[10px] uppercase tracking-[0.2em] text-[#8b5cf6]">PREČO TO POTREBUJEŠ</p>
+              <h2 className="font-heading text-center text-3xl text-white sm:text-4xl text-glow">KOĽKO SI UŽ PREPLATIL?</h2>
             </FadeIn>
 
             <div className="mt-10 space-y-2">
-              {[
-                { name: 'Prismatic Evolutions ETB', retail: 49.99, resell: 199 },
-                { name: 'Pokémon 151 ETB', retail: 49.99, resell: 389 },
-                { name: 'Ascended Heroes ETB', retail: 59.99, resell: 139 },
-                { name: 'Perfect Order ETB', retail: 59.99, resell: 99 },
-              ].map((p, i) => (
+              {COMPARISONS.map((p, i) => (
                 <FadeIn key={p.name} delay={i * 0.06}>
-                  <div className="flex items-center gap-3 rounded-lg border border-border/5 bg-card/10 px-4 py-3 sm:gap-4">
-                    <div className="min-w-0 flex-1 text-sm font-semibold">{p.name}</div>
+                  <div className="flex items-center gap-3 rounded-lg px-4 py-3 card-v card-v-hover transition-all">
+                    <div className="min-w-0 flex-1 text-sm font-semibold text-[#e2e8f0]">{p.name}</div>
                     <div className="flex items-center gap-3 shrink-0 tabular-nums">
-                      <span className="text-sm font-bold text-emerald-400">{p.retail}€</span>
-                      <span className="text-[10px] text-muted-foreground/20">vs</span>
-                      <span className="text-sm font-bold text-red-400/70 line-through">{p.resell}€</span>
-                      <span className="hidden rounded bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-400 sm:inline">
+                      <div className="text-right"><div className="font-label text-[8px] uppercase tracking-wider text-[#64748b]">RETAIL</div><div className="text-base font-black price-green">{p.retail}€</div></div>
+                      <span className="text-[#8b5cf6]/20">→</span>
+                      <div className="text-right"><div className="font-label text-[8px] uppercase tracking-wider text-[#64748b]">RESELL</div><div className="text-base font-black price-red line-through">{p.resell}€</div></div>
+                      <span className="hidden rounded-md px-2 py-1 font-label text-[10px] font-bold sm:inline price-green" style={{ background: 'rgba(34,197,94,0.1)' }}>
                         -{Math.round(p.resell - p.retail)}€
                       </span>
                     </div>
@@ -178,137 +177,133 @@ export default function LandingPage() {
             </div>
 
             <FadeIn delay={0.3}>
-              <div className="mt-6 rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-center">
-                <span className="text-xs text-muted-foreground/50">Celková úspora</span>
-                <span className="ml-2 text-2xl font-extrabold text-primary">{totalSavings}€</span>
-                <span className="ml-2 text-xs text-muted-foreground/30">= {Math.round(totalSavings / 4.99)} mesiacov Premium</span>
+              <div className="mt-6 rounded-lg p-5 text-center" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
+                <span className="font-label text-[10px] uppercase tracking-wider text-[#64748b]">CELKOVÁ ÚSPORA</span>
+                <span className="ml-3 font-heading text-3xl price-green"><Counter target={606} />€</span>
+                <span className="ml-3 font-label text-[10px] text-[#64748b]">= {Math.round(606 / 4.99)} MESIACOV PREMIUM</span>
               </div>
             </FadeIn>
           </div>
         </section>
 
-        {/* ===== SPEED MATTERS - compact ===== */}
-        <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-          <FadeIn>
-            <h2 className="text-center text-xl font-extrabold sm:text-2xl">
-              Od doskladnenia po vypredanie: 23 minút
-            </h2>
-            <p className="mx-auto mt-3 max-w-md text-center text-sm text-muted-foreground">Bez automatického monitoringu sa to nedozvieš včas.</p>
-          </FadeIn>
-
-          <div className="relative mt-10">
-            <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-emerald-500/15 via-primary/15 to-red-500/15 sm:left-7" />
-            {[
-              { time: '14:02', text: 'E-shop doskladní produkt za retail cenu', color: 'border-emerald-500/15 bg-emerald-500/5' },
-              { time: '14:04', text: 'MMpokebot detekuje a pošle notifikáciu', color: 'border-primary/15 bg-primary/5', highlight: true },
-              { time: '14:25', text: 'Vypredané. Resell cena: 2-3x viac', color: 'border-red-500/15 bg-red-500/5' },
-            ].map((t, i) => (
-              <FadeIn key={i} delay={i * 0.12}>
-                <div className="relative flex gap-4 pb-4 sm:gap-5">
-                  <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border sm:h-14 sm:w-14 ${t.color}`}>
-                    <span className="text-[10px] font-bold text-muted-foreground/60">{t.time}</span>
+        {/* TIMELINE */}
+        <section className="relative bg-glow-bottom">
+          <Particles />
+          <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6">
+            <FadeIn>
+              <p className="mb-2 text-center font-label text-[10px] uppercase tracking-[0.2em] text-[#8b5cf6]">RÝCHLOSŤ ROZHODUJE</p>
+              <h2 className="font-heading text-center text-3xl text-white sm:text-4xl text-glow">23 MINÚT. TOĽKO MÁŠ ČAS.</h2>
+            </FadeIn>
+            <div className="relative mt-12">
+              <div className="absolute left-7 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom, rgba(34,197,94,0.3), rgba(139,92,246,0.3), rgba(239,68,68,0.3))' }} />
+              {[
+                { time: '14:02', text: 'E-shop doskladní produkt za retail cenu', c: 'rgba(34,197,94,0.08)', bc: 'rgba(34,197,94,0.2)', tc: '#22c55e' },
+                { time: '14:04', text: 'MMpokebot pošle notifikáciu', c: 'rgba(139,92,246,0.08)', bc: 'rgba(139,92,246,0.2)', tc: '#a78bfa', ring: true },
+                { time: '14:25', text: 'Vypredané. Resell: 2-3x viac.', c: 'rgba(239,68,68,0.06)', bc: 'rgba(239,68,68,0.15)', tc: '#ef4444' },
+              ].map((t, i) => (
+                <FadeIn key={i} delay={i * 0.12}>
+                  <div className="relative flex gap-4 pb-4">
+                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full" style={{ background: t.c, border: `1px solid ${t.bc}` }}>
+                      <span className="font-label text-[10px] font-bold" style={{ color: t.tc }}>{t.time}</span>
+                    </div>
+                    <div className="flex flex-1 items-center rounded-lg px-4 py-3" style={{ background: t.c, border: `1px solid ${t.bc}`, boxShadow: t.ring ? '0 0 20px rgba(139,92,246,0.1)' : 'none' }}>
+                      <p className="text-sm font-medium" style={{ color: t.tc }}>{t.text}</p>
+                    </div>
                   </div>
-                  <div className={`flex flex-1 items-center rounded-lg border px-4 py-3 ${t.color} ${t.highlight ? 'ring-1 ring-primary/10' : ''}`}>
-                    <p className={`text-sm ${t.highlight ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>{t.text}</p>
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== SHOPS - compact ===== */}
-        <section className="border-y border-border/8 bg-card/5">
-          <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 text-center">
-            <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/25">11 retail e-shopov</p>
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {['Alza', 'Nekonečno', 'iHrysko', 'Dráčik', 'Smarty', 'Brloh', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
-                <span key={s} className="rounded-full border border-border/8 px-3 py-1 text-[11px] text-muted-foreground/40">{s}</span>
+                </FadeIn>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ===== PRICING - compact ===== */}
+        {/* SHOPS */}
+        <section style={{ borderTop: '1px solid rgba(139,92,246,0.08)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
+          <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 text-center">
+            <p className="mb-4 font-label text-[9px] uppercase tracking-[0.25em] text-[#475569]">11 RETAIL E-SHOPOV</p>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {['Alza', 'Nekonečno', 'iHrysko', 'Dráčik', 'Smarty', 'Brloh', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
+                <span key={s} className="rounded-full px-3 py-1 font-label text-[10px] text-[#64748b] card-v transition-colors hover:text-[#a78bfa]">{s}</span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* PRICING */}
         <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
           <FadeIn>
-            <h2 className="text-center text-xl font-extrabold sm:text-2xl">Jeden plán. Férová cena.</h2>
+            <p className="mb-2 text-center font-label text-[10px] uppercase tracking-[0.2em] text-[#8b5cf6]">CENNÍK</p>
+            <h2 className="font-heading text-center text-3xl text-white sm:text-4xl text-glow">JEDEN RESTOCK A MÁŠ TO SPÄŤ</h2>
           </FadeIn>
-
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             <FadeIn>
-              <div className="rounded-xl border border-border/8 bg-card/5 p-6">
-                <h3 className="font-bold">Free</h3>
-                <div className="mt-1 mb-5"><span className="text-2xl font-extrabold">0€</span></div>
+              <div className="h-full rounded-xl p-6 card-v">
+                <h3 className="font-heading text-2xl text-white">FREE</h3>
+                <p className="mb-4 font-label text-[10px] text-[#64748b]">PRE ZVEDAVÝCH</p>
+                <div className="mb-5 font-heading text-4xl text-white">0€</div>
                 <ul className="space-y-2 text-[13px]">
-                  {['Dashboard - čo je skladom', 'Filtrovanie podľa kategórie'].map(f => (
-                    <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/25" /><span className="text-muted-foreground/60">{f}</span></li>
-                  ))}
-                  {['Notifikácie', 'Watchlist', '5 min kontrola'].map(f => (
-                    <li key={f} className="flex items-start gap-2 text-muted-foreground/15"><X className="mt-0.5 h-3.5 w-3.5 shrink-0" />{f}</li>
-                  ))}
+                  {['Dashboard – čo je skladom', 'Filtrovanie podľa kategórie'].map(f => <li key={f} className="flex items-start gap-2 text-[#94a3b8]"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#475569]" />{f}</li>)}
+                  {['Notifikácie', 'Watchlist', '5 min kontrola'].map(f => <li key={f} className="flex items-start gap-2 text-[#334155]"><X className="mt-0.5 h-3.5 w-3.5 shrink-0" />{f}</li>)}
                 </ul>
-                <Button variant="outline" className="mt-6 w-full text-xs" render={<Link href="/register" />}>Začať zadarmo</Button>
+                <Button variant="outline" className="mt-6 w-full font-label text-[10px] uppercase tracking-wider text-[#a78bfa]" style={{ borderColor: 'rgba(139,92,246,0.2)' }} render={<Link href="/register" />}>ZAČAŤ ZADARMO</Button>
               </div>
             </FadeIn>
             <FadeIn delay={0.08}>
-              <div className="relative rounded-xl border border-primary/15 bg-gradient-to-b from-primary/5 to-transparent p-6 shadow-lg shadow-primary/5">
-                <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-bold text-primary-foreground">Odporúčané</div>
-                <h3 className="font-bold">Premium</h3>
-                <div className="mt-1 mb-5"><span className="text-2xl font-extrabold">4.99€</span><span className="text-xs text-muted-foreground/40">/mesiac</span></div>
+              <div className="relative h-full rounded-xl p-6 glow-v" style={{ background: 'linear-gradient(to bottom, rgba(139,92,246,0.12), rgba(139,92,246,0.04))', border: '1px solid rgba(139,92,246,0.25)' }}>
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-[#8b5cf6] px-3 py-0.5 font-label text-[9px] font-bold text-white">ODPORÚČANÉ</div>
+                <h3 className="font-heading text-2xl text-white">PREMIUM</h3>
+                <p className="mb-4 font-label text-[10px] text-[#64748b]">PRE ZBERATEĽOV</p>
+                <div className="mb-5"><span className="font-heading text-4xl text-white">4.99€</span><span className="text-xs text-[#64748b]">/mesiac</span></div>
                 <ul className="space-y-2 text-[13px]">
-                  {['Notifikácie do 5 min od restocku', 'Kontrola každých 5 minút', 'Neobmedzený watchlist', 'Cenová história'].map(f => (
-                    <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />{f}</li>
-                  ))}
+                  {['Notifikácie do 5 min', 'Kontrola každých 5 minút', 'Neobmedzený watchlist', 'Cenová história'].map(f => <li key={f} className="flex items-start gap-2 text-[#e2e8f0]"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#8b5cf6]" />{f}</li>)}
                 </ul>
-                <Button className="mt-6 w-full text-xs font-bold shadow-md shadow-primary/10" render={<Link href="/register" />}>
-                  Získať Premium <ChevronRight className="ml-0.5 h-3 w-3" />
+                <Button className="mt-6 w-full font-label text-[10px] uppercase tracking-wider bg-[#8b5cf6] hover:bg-[#7c3aed] text-white shadow-lg shadow-[#8b5cf6]/20" render={<Link href="/register" />}>
+                  ZÍSKAŤ PREMIUM <ChevronRight className="ml-1 h-3 w-3" />
                 </Button>
               </div>
             </FadeIn>
           </div>
         </section>
 
-        {/* ===== FAQ ===== */}
-        <section className="border-t border-border/8">
+        {/* FAQ */}
+        <section style={{ borderTop: '1px solid rgba(139,92,246,0.08)' }}>
           <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-            <FadeIn><h2 className="mb-8 text-center text-xl font-extrabold">Otázky</h2></FadeIn>
+            <FadeIn><h2 className="mb-8 text-center font-heading text-3xl text-white">OTÁZKY</h2></FadeIn>
             <div className="space-y-1">
-              {[
-                { q: 'Ako rýchlo dostanem notifikáciu?', a: 'Premium: do 5 minút od doskladnenia. Free: vidíš dashboard s 30 min oneskorením, bez notifikácií.' },
-                { q: 'Prečo len retail shopy?', a: 'Retail shopy predávajú za MSRP. Keď doskladnia, kúpiš za normálnu cenu. Reselleri navyšujú 2-3x.' },
-                { q: 'Čo presne sledujete?', a: 'Sealed TCG produkty: ETB, Booster Boxy, Booster Packy, Bundle, Collection Boxy, Tins. Žiadne plyšáky, obaly ani príslušenstvo.' },
-                { q: 'Ktoré e-shopy?', a: 'Nekonečno, iHrysko, Dráčik, Smarty, Brloh, Xzone, Pompo.sk, Pompo.cz, Bambule a Knihy Dobrovský. Alza čoskoro.' },
-              ].map((item, i) => (
-                <div key={i} className="rounded-lg border border-border/5 transition-colors hover:bg-card/10">
-                  <button className="flex w-full items-center justify-between p-3.5 text-left text-[13px] font-semibold" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                    {item.q}
-                    <motion.div animate={{ rotate: openFaq === i ? 90 : 0 }} transition={{ duration: 0.15 }}>
-                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/20" />
-                    </motion.div>
-                  </button>
-                  <AnimatePresence>
-                    {openFaq === i && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                        <div className="border-t border-border/5 px-3.5 pb-3.5 pt-2.5 text-[13px] leading-relaxed text-muted-foreground/60">{item.a}</div>
+              {FAQ.map((item, i) => (
+                <FadeIn key={i} delay={i * 0.04}>
+                  <div className="rounded-lg card-v transition-colors hover:bg-[rgba(139,92,246,0.1)]">
+                    <button className="flex w-full items-center justify-between p-4 text-left text-sm font-semibold text-[#e2e8f0]" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                      {item.q}
+                      <motion.div animate={{ rotate: openFaq === i ? 90 : 0 }} transition={{ duration: 0.15 }}>
+                        <ChevronRight className="h-3 w-3 text-[#64748b]" />
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                    </button>
+                    <AnimatePresence>
+                      {openFaq === i && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
+                          <div className="px-4 pb-4 pt-1 text-sm text-[#94a3b8]" style={{ borderTop: '1px solid rgba(139,92,246,0.08)' }}>{item.a}</div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </FadeIn>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ===== CTA ===== */}
+        {/* CTA */}
         <section className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
           <FadeIn>
-            <div className="rounded-xl border border-primary/8 bg-primary/3 p-8 text-center sm:p-12">
-              <h2 className="text-xl font-extrabold sm:text-2xl">Ďalšie doskladnenie môže prísť kedykoľvek.</h2>
-              <p className="mt-2 text-sm text-muted-foreground/50">Buď pripravený.</p>
-              <Button size="lg" className="mt-6 h-11 gap-2 px-8 text-sm font-bold shadow-lg shadow-primary/10" render={<Link href="/register" />}>
-                Začať sledovať <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
+            <div className="relative overflow-hidden rounded-xl p-10 text-center sm:p-14" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}>
+              <Particles />
+              <div className="relative">
+                <h2 className="font-heading text-3xl text-white sm:text-4xl text-glow">ĎALŠIE DOSKLADNENIE PRÍDE.</h2>
+                <p className="mt-2 text-sm text-[#94a3b8]">Otázka je, či sa to dozvieš včas.</p>
+                <Button size="lg" className="mt-7 h-12 gap-2 px-8 font-label text-xs uppercase tracking-wider bg-[#8b5cf6] hover:bg-[#7c3aed] text-white shadow-lg shadow-[#8b5cf6]/20" render={<Link href="/register" />}>
+                  ZAČAŤ SLEDOVAŤ <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
           </FadeIn>
         </section>
