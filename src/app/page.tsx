@@ -2,328 +2,276 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
-  Zap, Bell, ArrowRight, Shield, Clock, Eye, RefreshCw,
-  ChevronRight, Star, Check, Store, TrendingUp, Users,
-  Package, ExternalLink, Sparkles,
+  ArrowRight, Bell, ChevronRight, ExternalLink, Clock,
+  ArrowDown, Check, X, Store, Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 
-const TYPED_WORDS = ['Prismatic Evolutions', 'Ascended Heroes ETB', 'Perfect Order', 'Booster Boxy', 'Mega Evolution']
-
-function TypedText() {
-  const [index, setIndex] = useState(0)
-  const [text, setText] = useState('')
-  const [deleting, setDeleting] = useState(false)
-  useEffect(() => {
-    const word = TYPED_WORDS[index]
-    const timer = setTimeout(() => {
-      if (!deleting) {
-        setText(word.substring(0, text.length + 1))
-        if (text.length === word.length) setTimeout(() => setDeleting(true), 2000)
-      } else {
-        setText(word.substring(0, text.length - 1))
-        if (text.length === 0) { setDeleting(false); setIndex((i) => (i + 1) % TYPED_WORDS.length) }
-      }
-    }, deleting ? 40 : 80)
-    return () => clearTimeout(timer)
-  }, [text, deleting, index])
-  return <span className="text-gradient">{text}<span className="animate-pulse text-primary/50">|</span></span>
-}
-
-function LiveDot() {
-  return (
-    <span className="relative flex h-2 w-2">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-    </span>
-  )
-}
-
-const SOCIAL_PROOF = [
-  { icon: Users, value: '500+', label: 'Aktívnych používateľov' },
-  { icon: Zap, value: '2,847', label: 'Detekovaných restockov' },
-  { icon: Clock, value: '<5 min', label: 'Čas notifikácie' },
-  { icon: Star, value: '4.9/5', label: 'Hodnotenie' },
+const PRICE_COMPARISONS = [
+  { name: 'Prismatic Evolutions ETB', retail: 49.99, resell: 149, savings: 99, img: '🔥' },
+  { name: 'Ascended Heroes ETB', retail: 59.99, resell: 119, savings: 59, img: '⚡' },
+  { name: 'Mega Evolution Booster Box', retail: 159.99, resell: 249, savings: 89, img: '📦' },
+  { name: 'Perfect Order ETB', retail: 59.99, resell: 89, savings: 29, img: '✨' },
 ]
 
-const SHOPS_LIST = [
-  'Nekonečno', 'iHrysko', 'Dráčik', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'
-]
-
-const PRICING = [
-  {
-    name: 'Free',
-    price: '0',
-    desc: 'Pre zvedavých',
-    features: ['Dashboard s produktami skladom', 'Filtrovanie podľa kategórie', 'Základné informácie', 'Kontrola každých 30 min'],
-    cta: 'Začať zadarmo',
-    href: '/register',
-    highlighted: false,
-  },
-  {
-    name: 'Premium',
-    price: '4.99',
-    desc: 'Pre serióznych zberateľov',
-    features: ['Všetko z Free', 'Notifikácie pri doskladnení', 'Kontrola každých 5 minút', 'Watchlist neobmedzený', 'Cenová história', 'Prioritná podpora'],
-    cta: 'Získať Premium',
-    href: '/register',
-    highlighted: true,
-  },
-]
-
-const FAQ = [
-  { q: 'Ako rýchlo sa dozviem o doskladnení?', a: 'Premium používatelia dostanú notifikáciu do 5 minút od momentu keď e-shop produkt naskladní. Free používatelia vidia dashboard s 30 minútovým oneskorením.' },
-  { q: 'Ktoré e-shopy sledujete?', a: 'Sledujeme 8 najväčších retail e-shopov na Slovensku a v Česku: Nekonečno, iHrysko, Dráčik, Xzone, Pompo.sk, Pompo.cz, Bambule a Knihy Dobrovský. Žiadne resell obchody.' },
-  { q: 'Prečo len retail?', a: 'Retail shopy predávajú za MSRP (odporúčanú maloobchodnú cenu). Keď sa produkt doskladní, kúpite ho za normálnu cenu - nie za 2-3x navýšenú od resellerov.' },
-  { q: 'Aké produkty sledujete?', a: 'Len sealed TCG produkty: Elite Trainer Boxy, Booster Boxy, Booster Packy, Booster Bundle a Collection Boxy. Žiadne plyšáky, figúrky ani príslušenstvo.' },
+const TIMELINE = [
+  { time: '14:02', event: 'Nekonečno doskladní Prismatic Evolutions ETB za 49.99€', type: 'restock' },
+  { time: '14:03', event: 'MMpokesklad detekuje zmenu', type: 'detect' },
+  { time: '14:04', event: 'Premium používatelia dostanú notifikáciu', type: 'notify' },
+  { time: '14:07', event: 'Produkt sa začína vypredávať', type: 'selling' },
+  { time: '14:25', event: 'Vypredané. Resell cena: 149€', type: 'soldout' },
 ]
 
 export default function LandingPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [savings, setSavings] = useState(3)
+
+  const totalSaved = PRICE_COMPARISONS.slice(0, savings).reduce((sum, p) => sum + p.savings, 0)
 
   return (
     <>
       <Navbar />
       <main className="flex-1">
 
-        {/* ===== HERO ===== */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center_top,oklch(0.88_0.17_88_/_0.07),transparent_60%)]" />
-          <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24">
-            <div className="grid items-center gap-12 lg:grid-cols-2">
-              {/* Left */}
-              <div>
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-xs text-emerald-400">
-                  <LiveDot />
-                  Monitorujeme 8 e-shopov práve teraz
-                </div>
+        {/* ===== HERO - The hook ===== */}
+        <section className="relative">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.88_0.17_88_/_0.05),transparent_50%)]" />
+          <div className="relative mx-auto max-w-3xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24">
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
+              Prismatic Evolutions ETB.<br />
+              Retail cena: <span className="text-emerald-400">49.99€</span><br />
+              Resell cena: <span className="text-red-400 line-through decoration-2">149€</span>
+            </h1>
 
-                <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
-                  Buď prvý pri doskladnení{' '}
-                  <TypedText />
-                </h1>
+            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+              Rozdiel? <strong className="text-foreground">5 minút.</strong> Kto prišiel neskoro, zaplatil 3x viac.
+              My ti dáme vedieť včas.
+            </p>
 
-                <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-                  Automaticky sledujeme slovenské a české retail e-shopy každých 5 minút.
-                  Keď sa vypredaný Pokémon TCG produkt objaví na sklade,
-                  <strong className="text-foreground"> dostaneš okamžitú notifikáciu</strong>.
-                </p>
+            <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Button size="lg" className="h-12 gap-2 px-8 text-base font-bold shadow-lg shadow-primary/20" render={<Link href="/register" />}>
+                Chcem vedieť o doskladnení
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
 
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <Button size="lg" className="h-12 gap-2 px-8 text-base font-bold shadow-lg shadow-primary/20" render={<Link href="/dashboard" />}>
-                    Pozrieť dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                  <Button size="lg" variant="outline" className="h-12 gap-2 px-6 text-base" render={<Link href="/register" />}>
-                    <Bell className="h-4 w-4" />
-                    Zapnúť notifikácie
-                  </Button>
-                </div>
+            <div className="mt-6 flex items-center justify-center gap-6 text-xs text-muted-foreground/60">
+              <span>✓ Zadarmo na vyskúšanie</span>
+              <span>✓ 8 retail e-shopov</span>
+              <span>✓ Kontrola každých 5 min</span>
+            </div>
 
-                <p className="mt-4 text-xs text-muted-foreground/50">Zadarmo. Bez kreditnej karty. Zruš kedykoľvek.</p>
-              </div>
-
-              {/* Right - Mock notification */}
-              <div className="relative hidden lg:block">
-                <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/10 via-transparent to-blue-500/10 blur-2xl" />
-                <div className="relative space-y-3 rounded-2xl border border-border/20 bg-card/50 p-6 backdrop-blur-sm">
-                  <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
-                    <LiveDot />
-                    <span>Live notifikácie</span>
-                  </div>
-
-                  {[
-                    { name: 'Prismatic Evolutions ETB', shop: 'Nekonečno', price: '95.99', time: 'pred 2 min', hot: true },
-                    { name: 'ME03 Perfect Order Booster Bundle', shop: 'Bambule', price: '35.99', time: 'pred 8 min', hot: true },
-                    { name: 'Ascended Heroes Mini Tin', shop: 'iHrysko', price: '19.99', time: 'pred 14 min', hot: false },
-                    { name: 'Journey Together ETB', shop: 'Dráčik', price: '49.99', time: 'pred 23 min', hot: false },
-                  ].map((item, i) => (
-                    <div key={i} className={`flex items-center gap-3 rounded-xl border p-3 transition-all ${item.hot ? 'border-primary/20 bg-primary/5' : 'border-border/10 bg-card/30'}`}>
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${item.hot ? 'bg-primary/15' : 'bg-muted/20'}`}>
-                        {item.hot ? <Sparkles className="h-4 w-4 text-primary" /> : <Package className="h-4 w-4 text-muted-foreground/50" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="truncate text-sm font-semibold">{item.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{item.shop} · {item.time}</p>
-                      </div>
-                      <span className="shrink-0 text-sm font-bold">{item.price}€</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="mt-16">
+              <ArrowDown className="mx-auto h-5 w-5 animate-bounce text-muted-foreground/20" />
             </div>
           </div>
         </section>
 
-        {/* ===== SOCIAL PROOF ===== */}
-        <section className="border-y border-border/15 bg-card/10">
-          <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-              {SOCIAL_PROOF.map((s) => {
-                const Icon = s.icon
-                return (
-                  <div key={s.label} className="text-center">
-                    <Icon className="mx-auto mb-2 h-5 w-5 text-primary/50" />
-                    <div className="text-2xl font-extrabold">{s.value}</div>
-                    <div className="text-[11px] text-muted-foreground">{s.label}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== SHOPS ===== */}
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <p className="mb-6 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground/40">Sledované retail e-shopy</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            {SHOPS_LIST.map(s => (
-              <div key={s} className="flex items-center gap-1.5 rounded-full border border-border/15 bg-card/20 px-4 py-1.5 text-sm text-muted-foreground/70">
-                <Store className="h-3 w-3 text-primary/40" />
-                {s}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== HOW IT WORKS ===== */}
+        {/* ===== THE PROBLEM ===== */}
         <section className="border-y border-border/15 bg-card/5">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-            <p className="mb-2 text-center text-xs font-medium uppercase tracking-widest text-primary/60">Ako to funguje</p>
-            <h2 className="mb-14 text-center text-2xl font-extrabold sm:text-3xl">Tri kroky k úspešnému nákupu</h2>
+          <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+            <h2 className="text-center text-2xl font-extrabold sm:text-3xl">
+              Koľko si už preplatil?
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg text-center text-muted-foreground">
+              Keď Pokémon TCG produkt vyjde, retail shopy ho predávajú za normálnu cenu.
+              Ale vypredá sa za minúty. Potom ho nájdeš len u resellerov - za dvojnásobok.
+            </p>
 
-            <div className="grid gap-8 sm:grid-cols-3">
-              {[
-                { num: '1', icon: RefreshCw, title: 'Skenujeme non-stop', desc: 'Každých 5 minút automaticky skontrolujeme dostupnosť na všetkých 8 e-shopoch. 24 hodín denne, 7 dní v týždni.' },
-                { num: '2', icon: Zap, title: 'Detekujeme restock', desc: 'Keď sa produkt zmení z "vypredané" na "skladom", okamžite to zachytíme. Žiadne falošné alerty.' },
-                { num: '3', icon: Bell, title: 'Notifikujeme teba', desc: 'Do 5 minút dostaneš notifikáciu s názvom produktu, cenou a priamym odkazom na e-shop. Stačí kliknúť a kúpiť.' },
-              ].map((step) => {
-                const Icon = step.icon
-                return (
-                  <div key={step.num} className="relative rounded-2xl border border-border/15 bg-card/20 p-8">
-                    <div className="absolute -top-3 left-6 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{step.num}</div>
-                    <Icon className="mb-4 h-6 w-6 text-primary/60" />
-                    <h3 className="mb-2 text-base font-bold">{step.title}</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">{step.desc}</p>
+            <div className="mt-12 space-y-3">
+              {PRICE_COMPARISONS.map((p) => (
+                <div key={p.name} className="flex items-center gap-4 rounded-xl border border-border/15 bg-card/20 p-4 sm:p-5">
+                  <span className="text-2xl">{p.img}</span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-bold sm:text-base">{p.name}</h3>
                   </div>
-                )
-              })}
+                  <div className="shrink-0 text-right">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className="text-[10px] uppercase text-muted-foreground/40">Retail</div>
+                        <div className="text-lg font-extrabold text-emerald-400">{p.retail}€</div>
+                      </div>
+                      <div className="text-muted-foreground/20">vs</div>
+                      <div>
+                        <div className="text-[10px] uppercase text-muted-foreground/40">Resell</div>
+                        <div className="text-lg font-extrabold text-red-400">{p.resell}€</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hidden shrink-0 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-sm font-bold text-emerald-400 sm:block">
+                    -{p.savings}€
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+              <p className="text-sm text-muted-foreground">Keby si tieto 4 produkty kúpil za retail namiesto resell, ušetríš</p>
+              <p className="mt-1 text-4xl font-extrabold text-primary">{PRICE_COMPARISONS.reduce((s, p) => s + p.savings, 0)}€</p>
+              <p className="mt-1 text-xs text-muted-foreground/60">To je {Math.round(PRICE_COMPARISONS.reduce((s, p) => s + p.savings, 0) / 4.99)} mesiacov Premium zadarmo.</p>
             </div>
           </div>
         </section>
 
-        {/* ===== WHY US ===== */}
-        <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <p className="mb-2 text-center text-xs font-medium uppercase tracking-widest text-primary/60">Prečo MMpokesklad</p>
-          <h2 className="mb-14 text-center text-2xl font-extrabold sm:text-3xl">Výhody oproti manuálnemu hľadaniu</h2>
+        {/* ===== HOW FAST IT HAPPENS ===== */}
+        <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+          <h2 className="text-center text-2xl font-extrabold sm:text-3xl">
+            23 minút. Toľko máš čas.
+          </h2>
+          <p className="mx-auto mt-4 max-w-lg text-center text-muted-foreground">
+            Od doskladnenia po vypredanie. Tak rýchlo to ide. Bez nás sa to nedozvieš včas.
+          </p>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { icon: Clock, title: 'Ušetri hodiny času', desc: 'Namiesto manuálneho kontrolovania 8 webstránok ti stačí jedna notifikácia.' },
-              { icon: Shield, title: 'Len retail ceny', desc: 'Sledujeme výhradne retailové obchody. Žiadni reselleri s navýšenými cenami.' },
-              { icon: TrendingUp, title: 'Nekupuj draho', desc: 'Kúp za MSRP keď e-shop doskladní, namiesto 2-3x ceny od resellerov.' },
-              { icon: Eye, title: 'Len TCG sealed', desc: 'ETB, Booster Boxy, Packy, Bundle, Tins. Žiadne plyšáky ani príslušenstvo.' },
-              { icon: Zap, title: 'Rýchlosť', desc: 'Kontrola každých 5 minút. Budeš medzi prvými kto sa dozvie o doskladnení.' },
-              { icon: Store, title: 'SK + CZ pokrytie', desc: '8 najväčších retail e-shopov na Slovensku a v Česku na jednom mieste.' },
-            ].map((f) => {
-              const Icon = f.icon
-              return (
-                <div key={f.title} className="group rounded-2xl border border-border/10 bg-card/10 p-6 transition-all hover:border-primary/15 hover:bg-card/30">
-                  <Icon className="mb-3 h-5 w-5 text-primary/50 transition-colors group-hover:text-primary" />
-                  <h3 className="mb-1.5 text-sm font-bold">{f.title}</h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
-        {/* ===== PRICING ===== */}
-        <section className="border-y border-border/15 bg-card/5">
-          <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6">
-            <p className="mb-2 text-center text-xs font-medium uppercase tracking-widest text-primary/60">Cenník</p>
-            <h2 className="mb-4 text-center text-2xl font-extrabold sm:text-3xl">Jednoduchý a férový</h2>
-            <p className="mb-12 text-center text-sm text-muted-foreground">Začni zadarmo. Upgradni keď budeš pripravený.</p>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              {PRICING.map((plan) => (
-                <div key={plan.name} className={`relative rounded-2xl border p-8 ${plan.highlighted ? 'border-primary/30 bg-primary/5 shadow-xl shadow-primary/5' : 'border-border/15 bg-card/10'}`}>
-                  {plan.highlighted && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground">
-                      Najpopulárnejšie
-                    </div>
-                  )}
-                  <h3 className="text-lg font-bold">{plan.name}</h3>
-                  <p className="mb-4 text-xs text-muted-foreground">{plan.desc}</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-extrabold">{plan.price}€</span>
-                    <span className="text-sm text-muted-foreground">/mesiac</span>
+          <div className="relative mt-12">
+            <div className="absolute left-[27px] top-0 bottom-0 w-px bg-border/20 sm:left-[31px]" />
+            <div className="space-y-0">
+              {TIMELINE.map((t, i) => (
+                <div key={i} className="relative flex gap-4 pb-6 sm:gap-5">
+                  <div className={`relative z-10 flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full border-2 sm:h-[64px] sm:w-[64px] ${
+                    t.type === 'restock' ? 'border-emerald-500/30 bg-emerald-500/10' :
+                    t.type === 'detect' ? 'border-blue-500/30 bg-blue-500/10' :
+                    t.type === 'notify' ? 'border-primary/30 bg-primary/10' :
+                    t.type === 'selling' ? 'border-amber-500/30 bg-amber-500/10' :
+                    'border-red-500/30 bg-red-500/10'
+                  }`}>
+                    <span className="text-xs font-bold text-muted-foreground">{t.time}</span>
                   </div>
-                  <ul className="mb-8 space-y-2.5">
-                    {plan.features.map(f => (
-                      <li key={f} className="flex items-start gap-2 text-sm">
-                        <Check className={`mt-0.5 h-4 w-4 shrink-0 ${plan.highlighted ? 'text-primary' : 'text-muted-foreground/50'}`} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button className={`w-full ${plan.highlighted ? '' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`} size="lg" render={<Link href={plan.href} />}>
-                    {plan.cta}
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
+                  <div className={`flex flex-1 items-center rounded-xl border p-4 ${
+                    t.type === 'soldout' ? 'border-red-500/20 bg-red-500/5' :
+                    t.type === 'notify' ? 'border-primary/20 bg-primary/5' :
+                    'border-border/15 bg-card/20'
+                  }`}>
+                    <p className={`text-sm font-medium ${t.type === 'soldout' ? 'text-red-400' : t.type === 'notify' ? 'text-primary' : ''}`}>
+                      {t.event}
+                    </p>
+                    {t.type === 'notify' && <Bell className="ml-auto h-4 w-4 text-primary" />}
+                    {t.type === 'soldout' && <X className="ml-auto h-4 w-4 text-red-400" />}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Naši používatelia mali <strong className="text-foreground">21 minút</strong> na nákup.
+              Bez nás by sa to dozvedeli z Instagramu - keď už bolo neskoro.
+            </p>
+          </div>
         </section>
 
-        {/* ===== FAQ ===== */}
-        <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-          <p className="mb-2 text-center text-xs font-medium uppercase tracking-widest text-primary/60">FAQ</p>
-          <h2 className="mb-10 text-center text-2xl font-extrabold">Časté otázky</h2>
+        {/* ===== WHAT WE MONITOR ===== */}
+        <section className="border-y border-border/15 bg-card/5">
+          <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+            <h2 className="text-center text-2xl font-extrabold sm:text-3xl">
+              Čo presne sledujeme
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg text-center text-muted-foreground">
+              Len sealed TCG produkty z retailových obchodov. Žiadne resell obchody, žiadne plyšáky.
+            </p>
 
-          <div className="space-y-2">
-            {FAQ.map((item, i) => (
-              <div key={i} className="rounded-xl border border-border/15 bg-card/10">
-                <button
-                  className="flex w-full items-center justify-between p-5 text-left text-sm font-semibold hover:text-primary"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                >
-                  {item.q}
-                  <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${openFaq === i ? 'rotate-90' : ''}`} />
-                </button>
-                {openFaq === i && (
-                  <div className="border-t border-border/10 px-5 pb-5 pt-3 text-sm leading-relaxed text-muted-foreground">
-                    {item.a}
-                  </div>
-                )}
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {[
+                { name: 'Elite Trainer Box', hot: true },
+                { name: 'Booster Box', hot: true },
+                { name: 'Booster Bundle', hot: false },
+                { name: 'Booster Pack', hot: false },
+                { name: 'Collection Box', hot: false },
+                { name: 'Tin / Mini Tin', hot: false },
+              ].map(c => (
+                <div key={c.name} className={`rounded-xl border p-4 text-center text-sm font-semibold ${c.hot ? 'border-primary/20 bg-primary/5 text-primary' : 'border-border/15 bg-card/20'}`}>
+                  {c.hot && <span className="mr-1">🔥</span>}
+                  {c.name}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8">
+              <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground/40">8 retail e-shopov</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {['Nekonečno', 'iHrysko', 'Dráčik', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
+                  <span key={s} className="rounded-full border border-border/15 bg-card/20 px-3 py-1 text-xs text-muted-foreground/60">{s}</span>
+                ))}
               </div>
-            ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== PRICING ===== */}
+        <section className="mx-auto max-w-4xl px-4 py-20 sm:px-6">
+          <h2 className="text-center text-2xl font-extrabold sm:text-3xl">
+            4.99€ mesačne. Jeden restock a zarobíš to späť.
+          </h2>
+          <p className="mx-auto mt-4 max-w-lg text-center text-sm text-muted-foreground">
+            Kúpiš jedno ETB za retail namiesto resell a ušetríš 50-100€. Premium sa zaplatí pri prvom úspešnom nákupe.
+          </p>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+            {/* Free */}
+            <div className="rounded-2xl border border-border/15 bg-card/10 p-8">
+              <h3 className="text-lg font-bold">Free</h3>
+              <div className="mb-6 mt-2">
+                <span className="text-3xl font-extrabold">0€</span>
+              </div>
+              <ul className="space-y-3 text-sm">
+                {['Dashboard - čo je práve skladom', 'Filtrovanie podľa kategórie a shopu', 'Kontrola každých 30 min'].map(f => (
+                  <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />{f}</li>
+                ))}
+                {['Notifikácie pri doskladnení', 'Watchlist', 'Cenová história'].map(f => (
+                  <li key={f} className="flex items-start gap-2 text-muted-foreground/30"><X className="mt-0.5 h-4 w-4 shrink-0" />{f}</li>
+                ))}
+              </ul>
+              <Button variant="outline" className="mt-8 w-full" size="lg" render={<Link href="/register" />}>
+                Začať zadarmo
+              </Button>
+            </div>
+
+            {/* Premium */}
+            <div className="relative rounded-2xl border border-primary/25 bg-gradient-to-b from-primary/5 to-transparent p-8 shadow-xl shadow-primary/5">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground">
+                Odporúčané
+              </div>
+              <h3 className="text-lg font-bold">Premium</h3>
+              <div className="mb-6 mt-2">
+                <span className="text-3xl font-extrabold">4.99€</span>
+                <span className="text-sm text-muted-foreground">/mesiac</span>
+              </div>
+              <ul className="space-y-3 text-sm">
+                {[
+                  'Všetko z Free',
+                  'Notifikácie do 5 minút od doskladnenia',
+                  'Kontrola každých 5 minút',
+                  'Neobmedzený watchlist',
+                  'Cenová história produktov',
+                  'Prioritná podpora',
+                ].map(f => (
+                  <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{f}</li>
+                ))}
+              </ul>
+              <Button className="mt-8 w-full font-bold shadow-lg shadow-primary/20" size="lg" render={<Link href="/register" />}>
+                Získať Premium
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+              <p className="mt-3 text-center text-[11px] text-muted-foreground/40">Zruš kedykoľvek. Bez záväzkov.</p>
+            </div>
           </div>
         </section>
 
         {/* ===== FINAL CTA ===== */}
         <section className="border-t border-border/15">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-            <div className="rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/8 via-card/60 to-card p-10 text-center sm:p-16">
-              <h2 className="text-2xl font-extrabold sm:text-3xl">
-                Nepremeškaj ďalšie doskladnenie
-              </h2>
-              <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-                Prismatic Evolutions, Ascended Heroes, Perfect Order - všetko sledujeme.
-                Zaregistruj sa a buď prvý kto nakúpi za retail cenu.
-              </p>
-              <Button size="lg" className="mt-8 h-12 gap-2 px-10 text-base font-bold shadow-lg shadow-primary/20" render={<Link href="/register" />}>
-                Registrovať sa zadarmo
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <p className="mt-3 text-[11px] text-muted-foreground/40">Žiadna platba. Zruš kedykoľvek.</p>
-            </div>
+          <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
+            <h2 className="text-2xl font-extrabold sm:text-3xl">
+              Ďalšie doskladnenie môže prísť kedykoľvek.
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              Otázka nie je či príde, ale či sa to dozvieš včas.
+            </p>
+            <Button size="lg" className="mt-8 h-12 gap-2 px-10 text-base font-bold shadow-lg shadow-primary/20" render={<Link href="/register" />}>
+              Začať sledovať doskladnenie
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </section>
       </main>
