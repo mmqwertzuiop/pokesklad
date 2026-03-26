@@ -274,10 +274,91 @@ async function scrapeKnihy(shopId) {
   return prods;
 }
 
+// ===== BRLOH (SK, EUR) - Puppeteer required =====
+async function scrapeBrloh(shopId) {
+  let puppeteer;
+  try { puppeteer = require('puppeteer'); } catch { console.log('  Puppeteer not available'); return []; }
+  const prods = [];
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  try {
+    await page.goto('https://www.brloh.sk/pokemon-c1781', { waitUntil: 'networkidle2', timeout: 30000 });
+    await delay(5000);
+    const rawProducts = await page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('[class*="product"], .item').forEach(el => {
+        if (!el.querySelector('img') || !el.querySelector('a')) return;
+        const text = el.textContent || '';
+        if (!text.includes('€')) return;
+        const nameEl = el.querySelector('h2, h3, h4, [class*="name"], [class*="title"]') || el.querySelector('a');
+        results.push({
+          name: nameEl?.textContent?.trim() || '',
+          href: el.querySelector('a')?.href || '',
+          img: el.querySelector('img')?.src || '',
+          price: text.match(/([\d,]+)\s*€/)?.[1] || '',
+          hasCart: !!el.querySelector('[class*="cart"], [class*="buy"], button'),
+        });
+      });
+      return results;
+    });
+    const seen = new Set();
+    for (const p of rawProducts) {
+      if (seen.has(p.href)) continue; seen.add(p.href);
+      const cat = classify(p.name); if (!cat) continue;
+      const price = parseP(p.price, false);
+      prods.push({ shop_id: shopId, name: cleanName(p.name), url: p.href, image_url: p.img || null,
+        category: cat, current_price: price, current_stock_status: p.hasCart ? 'in_stock' : 'out_of_stock', current_stock_quantity: null });
+    }
+  } catch(e) { console.log('  Brloh error:', e.message.substring(0, 60)); }
+  await browser.close();
+  return prods;
+}
+
+// ===== SMARTY (SK, EUR) - Puppeteer required =====
+async function scrapeSmarty(shopId) {
+  let puppeteer;
+  try { puppeteer = require('puppeteer'); } catch { console.log('  Puppeteer not available'); return []; }
+  const prods = [];
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  try {
+    await page.goto('https://www.smarty.sk/Vyrobce/pokemon-company', { waitUntil: 'networkidle2', timeout: 30000 });
+    await delay(5000);
+    const rawProducts = await page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('[class*="product"], .item, [class*="tile"], [data-product]').forEach(el => {
+        const nameEl = el.querySelector('h2, h3, a, [class*="name"], [class*="title"]');
+        const name = nameEl?.textContent?.trim() || '';
+        const href = (el.querySelector('a[href]') || {}).href || '';
+        const img = (el.querySelector('img') || {}).src || '';
+        const text = el.textContent || '';
+        const price = text.match(/([\d\s,]+)\s*€/)?.[1] || '';
+        if (name.length > 5 && (name.toLowerCase().includes('pokemon') || name.toLowerCase().includes('pokémon'))) {
+          results.push({ name, href, img, price });
+        }
+      });
+      return results;
+    });
+    const seen = new Set();
+    for (const p of rawProducts) {
+      if (seen.has(p.href)) continue; seen.add(p.href);
+      const cat = classify(p.name); if (!cat) continue;
+      const price = parseP(p.price, false);
+      prods.push({ shop_id: shopId, name: cleanName(p.name), url: p.href, image_url: p.img || null,
+        category: cat, current_price: price, current_stock_status: 'in_stock', current_stock_quantity: null });
+    }
+  } catch(e) { console.log('  Smarty error:', e.message.substring(0, 60)); }
+  await browser.close();
+  return prods;
+}
+
 const SCRAPERS = {
   nekonecno: scrapeNekonecno, ihrysko: scrapeIhrysko, xzone: scrapeXzone,
   dracik: scrapeDracik, pomposk: scrapePompoSk, pompocz: scrapePompoCz,
   bambule: scrapeBambule, knihydobrovsky: scrapeKnihy,
+  brloh: scrapeBrloh, smarty: scrapeSmarty,
 };
 
 async function main() {

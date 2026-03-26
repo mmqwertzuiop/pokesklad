@@ -59,7 +59,7 @@ export default function LandingPage() {
 
             <div className="mt-6 flex items-center justify-center gap-6 text-xs text-muted-foreground/60">
               <span>✓ Zadarmo na vyskúšanie</span>
-              <span>✓ 8 retail e-shopov</span>
+              <span>✓ 10 retail e-shopov</span>
               <span>✓ Kontrola každých 5 min</span>
             </div>
 
@@ -191,12 +191,12 @@ export default function LandingPage() {
             <div className="mt-8">
               <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground/40">Sledované retail e-shopy</p>
               <div className="flex flex-wrap justify-center gap-2">
-                {['Nekonečno', 'iHrysko', 'Dráčik', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
+                {['Nekonečno', 'iHrysko', 'Dráčik', 'Smarty', 'Brloh', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
                   <span key={s} className="rounded-full border border-emerald-500/15 bg-emerald-500/5 px-3 py-1 text-xs text-emerald-400/70">{s}</span>
                 ))}
               </div>
               <div className="mt-3 flex flex-wrap justify-center gap-2">
-                {['Smarty', 'Brloh', 'Alza'].map(s => (
+                {['Alza'].map(s => (
                   <span key={s} className="rounded-full border border-amber-500/15 bg-amber-500/5 px-3 py-1 text-xs text-amber-400/70">{s} - čoskoro</span>
                 ))}
               </div>
