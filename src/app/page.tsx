@@ -61,7 +61,7 @@ export default function LandingPage() {
 
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-500/5 px-3 py-1 text-[11px] text-emerald-400">
                 <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" /></span>
-                Práve teraz monitorujeme 10 e-shopov
+                Práve teraz monitorujeme 11 e-shopov
               </div>
 
               <h1 className="mx-auto max-w-2xl text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl">
@@ -70,7 +70,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
-                Kontrolujeme 10 e-shopov každých 5 minút. Keď sa vypredaný
+                Kontrolujeme 11 e-shopov každých 5 minút. Keď sa vypredaný
                 produkt objaví skladom, dostaneš notifikáciu.
               </p>
 
@@ -220,9 +220,9 @@ export default function LandingPage() {
         {/* ===== SHOPS - compact ===== */}
         <section className="border-y border-border/8 bg-card/5">
           <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 text-center">
-            <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/25">10 retail e-shopov</p>
+            <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/25">11 retail e-shopov</p>
             <div className="flex flex-wrap justify-center gap-1.5">
-              {['Nekonečno', 'iHrysko', 'Dráčik', 'Smarty', 'Brloh', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
+              {['Alza', 'Nekonečno', 'iHrysko', 'Dráčik', 'Smarty', 'Brloh', 'Xzone', 'Pompo.sk', 'Pompo.cz', 'Bambule', 'Knihy Dobrovský'].map(s => (
                 <span key={s} className="rounded-full border border-border/8 px-3 py-1 text-[11px] text-muted-foreground/40">{s}</span>
               ))}
             </div>

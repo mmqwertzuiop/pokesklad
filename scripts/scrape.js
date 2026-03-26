@@ -13,7 +13,7 @@ const CZK_EUR = 0.04;
 const EXCL = [
   // Accessories
   'album','binder','sleeve','toploader','deck box','ultra pro','playmat','podložka','podlozka',
-  'obal','ochranné','protective','card sleeves','na karty','kartová','display case',
+  'obal','ochranné','protective','card sleeves','na karty','display case',
   // Toys/merch
   'plyšov','plush','figúrk','figurk','tričk','t-shirt','mikin','hoodie','batoh','backpack',
   'wallet','peňaženk','puzzle','keychain','kľúčenk','mug','hrnček','hrncek','pillow','vankúš',
@@ -22,7 +22,7 @@ const EXCL = [
   'pokeball','funko','lego','mega construx',
   // Non-TCG Pokemon
   'nintendo','switch','ps4','ps5','xbox','dvd','book','kniha','kocky','dice','coin','minca',
-  'energy card','hracia podložka','herná podložka','nákupná','shopping',
+  'energy card','nákupná','shopping',
   // Graded/special
   'acrylic','graded','psa ','bgs ','cgc ','jumbo','oversized','promo card',
   // Non-sealed TCG
@@ -34,7 +34,7 @@ const EXCL = [
 function classify(name) {
   const l = name.toLowerCase();
   for (const k of EXCL) if (l.includes(k)) return null;
-  if (!l.includes('pokemon') && !l.includes('pokémon')) return null;
+  if (!l.includes('pokemon') && !l.includes('pokémon') && !l.includes('pok\u00e9mon')) return null;
   if (l.includes('elite trainer box') || /\betb\b/.test(l)) return 'etb';
   if (l.includes('booster bundle')) return 'booster_bundle';
   if ((l.includes('booster box') || l.includes('booster display')) && !l.includes('bundle')) return 'booster_box';
@@ -47,7 +47,7 @@ function classify(name) {
 
 // Clean product name - remove whitespace garbage
 function cleanName(raw) {
-  return raw.replace(/\s+/g, ' ').replace(/^\d+\s*/, '').trim();
+  return raw.replace(/\s+/g, ' ').replace(/^\d+\s*/, '').replace(/^Kartová hra\s*/i, '').trim();
 }
 
 function parseP(t, czk) {
@@ -354,11 +354,51 @@ async function scrapeSmarty(shopId) {
   return prods;
 }
 
+// ===== ALZA (SK, EUR) - Puppeteer required =====
+async function scrapeAlza(shopId) {
+  let puppeteer;
+  try { puppeteer = require('puppeteer'); } catch { console.log('  Puppeteer not available'); return []; }
+  const prods = [], seen = new Set();
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  try {
+    await page.goto('https://www.alza.sk/', { waitUntil: 'networkidle2', timeout: 30000 });
+    await delay(2000);
+    await page.goto('https://www.alza.sk/search.htm?exps=pokemon+tcg', { waitUntil: 'networkidle2', timeout: 30000 });
+    await delay(10000);
+    const rawProducts = await page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('.box.browsingitem').forEach(box => {
+        const nameLink = box.querySelector('a.name.browsinglink, a.name');
+        if (!nameLink) return;
+        const name = nameLink.textContent.trim();
+        const href = nameLink.href;
+        const img = box.querySelector('img')?.src || '';
+        const priceMatch = box.textContent.match(/([\d\s,]+)\s*€/);
+        const price = priceMatch ? priceMatch[1].replace(/\s/g, '') : '';
+        const canBuy = !!box.querySelector('.btnk1, [class*="cart"], [class*="buy"]');
+        results.push({ name, href, img, price, canBuy });
+      });
+      return results;
+    });
+    for (const p of rawProducts) {
+      if (!p.name || seen.has(p.href)) continue; seen.add(p.href);
+      const cat = classify(p.name); if (!cat) continue;
+      const price = parseP(p.price, false);
+      prods.push({ shop_id: shopId, name: cleanName(p.name), url: p.href, image_url: p.img || null,
+        category: cat, current_price: price, current_stock_status: p.canBuy ? 'in_stock' : 'out_of_stock', current_stock_quantity: null });
+    }
+  } catch(e) { console.log('  Alza error:', e.message.substring(0, 60)); }
+  await browser.close();
+  return prods;
+}
+
 const SCRAPERS = {
   nekonecno: scrapeNekonecno, ihrysko: scrapeIhrysko, xzone: scrapeXzone,
   dracik: scrapeDracik, pomposk: scrapePompoSk, pompocz: scrapePompoCz,
   bambule: scrapeBambule, knihydobrovsky: scrapeKnihy,
-  brloh: scrapeBrloh, smarty: scrapeSmarty,
+  brloh: scrapeBrloh, smarty: scrapeSmarty, alza: scrapeAlza,
 };
 
 async function main() {
