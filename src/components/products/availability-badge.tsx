@@ -1,30 +1,28 @@
 import type { StockStatus } from '@/types/product'
-import { Badge } from '@/components/ui/badge'
-import { CheckCircle2, XCircle, Clock, HelpCircle } from 'lucide-react'
 
 const STATUS_CONFIG: Record<
   StockStatus,
-  { label: string; className: string; icon: typeof CheckCircle2 }
+  { label: string; dotColor: string; textColor: string }
 > = {
   in_stock: {
     label: 'Skladom',
-    className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20',
-    icon: CheckCircle2,
+    dotColor: 'bg-emerald-500',
+    textColor: 'text-emerald-400',
   },
   out_of_stock: {
     label: 'Vypredané',
-    className: 'bg-red-500/15 text-red-400 border-red-500/25 hover:bg-red-500/20',
-    icon: XCircle,
+    dotColor: 'bg-red-500',
+    textColor: 'text-red-400',
   },
   preorder: {
     label: 'Predobjednávka',
-    className: 'bg-amber-500/15 text-amber-400 border-amber-500/25 hover:bg-amber-500/20',
-    icon: Clock,
+    dotColor: 'bg-amber-500',
+    textColor: 'text-amber-400',
   },
   unknown: {
     label: 'Neznámy',
-    className: 'bg-gray-500/15 text-gray-400 border-gray-500/25 hover:bg-gray-500/20',
-    icon: HelpCircle,
+    dotColor: 'bg-gray-500',
+    textColor: 'text-gray-400',
   },
 }
 
@@ -38,15 +36,21 @@ export function AvailabilityBadge({
   className?: string
 }) {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.unknown
-  const Icon = config.icon
 
   return (
-    <Badge variant="outline" className={`${config.className} ${className || ''}`}>
-      <Icon className="mr-1 h-3 w-3" />
-      {config.label}
-      {quantity != null && status === 'in_stock' && (
-        <span className="ml-1 opacity-75">({quantity} ks)</span>
-      )}
-    </Badge>
+    <div className={`flex items-center gap-1.5 ${className || ''}`}>
+      <span className="relative flex h-2 w-2">
+        {status === 'in_stock' && (
+          <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${config.dotColor} opacity-75`} />
+        )}
+        <span className={`relative inline-flex h-2 w-2 rounded-full ${config.dotColor}`} />
+      </span>
+      <span className={`text-[11px] font-medium ${config.textColor}`}>
+        {config.label}
+        {quantity != null && status === 'in_stock' && (
+          <span className="ml-1 opacity-70">({quantity})</span>
+        )}
+      </span>
+    </div>
   )
 }

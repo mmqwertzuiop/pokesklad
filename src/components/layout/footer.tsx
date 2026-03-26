@@ -2,14 +2,14 @@ import { Package } from 'lucide-react'
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-border/50 bg-background/50">
-      <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-8 sm:flex-row sm:justify-between sm:px-6">
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-gradient">MMpokesklad</span>
+    <footer className="mt-auto border-t border-border/20">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-6 sm:flex-row sm:justify-between sm:px-6">
+        <div className="flex items-center gap-1.5 text-sm">
+          <Package className="h-3.5 w-3.5 text-primary/60" />
+          <span className="font-medium text-foreground/60">MMpokesklad</span>
         </div>
-        <p className="text-center text-xs text-muted-foreground">
-          MMpokesklad nie je pridružený k Nintendo, The Pokémon Company alebo ich dcérskym spoločnostiam. Všetky ochranné známky patria ich príslušným vlastníkom.
+        <p className="text-center text-[11px] text-muted-foreground/40">
+          Nie je pridružený k Nintendo alebo The Pokémon Company.
         </p>
       </div>
     </footer>

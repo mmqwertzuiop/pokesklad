@@ -9,13 +9,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard?status=in_stock', label: 'Skladom', icon: Package },
-]
-
-const AUTH_ITEMS = [
-  { href: '/watchlist', label: 'Watchlist', icon: Heart },
-  { href: '/settings', label: 'Nastavenia', icon: Settings },
+  { href: '/dashboard', label: 'Skladom', icon: LayoutDashboard },
 ]
 
 export function Navbar({ user }: { user?: { email: string } | null }) {
@@ -23,67 +17,58 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 glow-yellow">
-              <Package className="h-5 w-5 text-primary" />
-            </div>
-            <span className="text-lg font-bold text-gradient">MMpokesklad</span>
-          </Link>
+    <header className="sticky top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <Package className="h-4 w-4 text-primary" />
+          </div>
+          <span className="text-base font-bold tracking-tight">
+            <span className="text-gradient">MM</span><span className="text-foreground/80">pokesklad</span>
+          </span>
+        </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href || pathname.startsWith(item.href.split('?')[0])
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
+        {/* Center nav */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 font-medium text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
 
-        <div className="flex items-center gap-3">
+        {/* Right */}
+        <div className="flex items-center gap-2">
           {user ? (
             <>
               <NotificationBell />
-              <div className="hidden items-center gap-1 md:flex">
-                {AUTH_ITEMS.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  )
-                })}
-              </div>
-              <div className="hidden h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary md:flex">
-                {user.email[0].toUpperCase()}
-              </div>
+              <Link href="/watchlist" className="hidden text-muted-foreground hover:text-foreground md:block">
+                <Heart className="h-4 w-4" />
+              </Link>
+              <Link href="/settings" className="hidden text-muted-foreground hover:text-foreground md:block">
+                <Settings className="h-4 w-4" />
+              </Link>
             </>
           ) : (
-            <div className="hidden gap-2 md:flex">
-              <Button variant="ghost" size="sm" render={<Link href="/login" />}>
-                Prihlasiť sa
+            <div className="hidden items-center gap-2 md:flex">
+              <Button variant="ghost" size="sm" className="text-xs" render={<Link href="/login" />}>
+                Prihlásiť sa
               </Button>
-              <Button size="sm" render={<Link href="/register" />}>
+              <Button size="sm" className="text-xs" render={<Link href="/register" />}>
                 Registrácia
               </Button>
             </div>
@@ -93,41 +78,16 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
             <SheetTrigger className="md:hidden" render={<Button variant="ghost" size="icon" />}>
               <Menu className="h-5 w-5" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 bg-background">
+            <SheetContent side="right" className="w-64 bg-background">
               <SheetTitle className="text-gradient">MMpokesklad</SheetTitle>
               <nav className="mt-6 flex flex-col gap-1">
-                {NAV_ITEMS.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  )
-                })}
-                {user && AUTH_ITEMS.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  )
-                })}
+                <Link href="/dashboard" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground">
+                  Skladom
+                </Link>
                 {!user && (
                   <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
                     <Button variant="ghost" size="sm" render={<Link href="/login" onClick={() => setOpen(false)} />}>
-                      Prihlasiť sa
+                      Prihlásiť sa
                     </Button>
                     <Button size="sm" render={<Link href="/register" onClick={() => setOpen(false)} />}>
                       Registrácia
