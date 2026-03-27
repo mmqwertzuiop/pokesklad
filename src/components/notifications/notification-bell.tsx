@@ -16,28 +16,16 @@ export function NotificationBell() {
 
   useEffect(() => {
     loadNotifications()
-
-    // Subscribe to real-time notifications
     const channel = supabase
       .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-        },
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
-          const newNotif = payload.new as Notification
-          setNotifications((prev) => [newNotif, ...prev])
-          setUnreadCount((prev) => prev + 1)
+          const n = payload.new as Notification
+          setNotifications(prev => [n, ...prev])
+          setUnreadCount(prev => prev + 1)
         }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+      ).subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   async function loadNotifications() {
@@ -50,67 +38,41 @@ export function NotificationBell() {
   }
 
   async function markAllRead() {
-    await fetch('/api/notifications', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: 'all' }),
-    })
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+    await fetch('/api/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'all' }) })
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
     setUnreadCount(0)
   }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" className="relative" />}>
-        <Bell className="h-5 w-5" />
+      <PopoverTrigger render={<Button variant="ghost" size="icon" className="relative text-[#64748b] hover:text-[#a78bfa]" />}>
+        <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8b5cf6] text-[9px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h3 className="text-sm font-semibold">Notifikácie</h3>
+      <PopoverContent className="w-80 p-0" align="end" style={{ background: '#0d0820', border: '1px solid rgba(139,92,246,0.15)' }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}>
+          <h3 className="font-label text-[10px] uppercase tracking-wider text-[#a78bfa]">NOTIFIKÁCIE</h3>
           {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground"
-              onClick={markAllRead}
-            >
-              Označiť všetky
-            </Button>
+            <button onClick={markAllRead} className="font-label text-[9px] uppercase tracking-wider text-[#64748b] hover:text-[#a78bfa]">OZNAČIŤ</button>
           )}
         </div>
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="max-h-72">
           {notifications.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Zatiaľ žiadne notifikácie
-            </div>
+            <div className="px-4 py-10 text-center text-xs text-[#475569]">Zatiaľ žiadne notifikácie</div>
           ) : (
-            <div className="divide-y divide-border">
-              {notifications.slice(0, 10).map((notif) => (
-                <div
-                  key={notif.id}
-                  className={`px-4 py-3 transition-colors ${
-                    !notif.is_read ? 'bg-primary/5' : ''
-                  }`}
-                >
+            <div>
+              {notifications.slice(0, 10).map(n => (
+                <div key={n.id} className="px-4 py-3 transition-colors hover:bg-[rgba(139,92,246,0.05)]" style={{ borderBottom: '1px solid rgba(139,92,246,0.05)' }}>
                   <div className="flex items-start gap-2">
-                    {!notif.is_read && (
-                      <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium leading-snug">
-                        {notif.title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {notif.body}
-                      </p>
-                      <p className="mt-1 text-[10px] text-muted-foreground/60">
-                        {new Date(notif.sent_at).toLocaleString('sk-SK')}
-                      </p>
+                    {!n.is_read && <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8b5cf6]" />}
+                    <div>
+                      <p className="text-xs font-semibold text-[#e2e8f0]">{n.title}</p>
+                      <p className="mt-0.5 text-[10px] text-[#64748b]">{n.body}</p>
+                      <p className="mt-1 text-[9px] text-[#475569]">{new Date(n.sent_at).toLocaleString('sk-SK')}</p>
                     </div>
                   </div>
                 </div>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#080412"/>
+  <text x="600" y="280" text-anchor="middle" font-family="Arial Black" font-weight="900" font-size="80" fill="white">MMPOKEBOT</text>
+  <text x="600" y="340" text-anchor="middle" font-family="Arial" font-size="24" fill="#94a3b8">Pokemon TCG Restock Tracker</text>
+  <text x="600" y="400" text-anchor="middle" font-family="Arial" font-size="18" fill="#8b5cf6">11 retail e-shopov • kontrola každých 5 minút</text>
+</svg>

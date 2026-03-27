@@ -3,10 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Package, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -21,72 +20,34 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError('Nesprávny email alebo heslo')
-      setLoading(false)
-      return
-    }
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setError('Nesprávny email alebo heslo'); setLoading(false); return }
     router.push('/dashboard')
     router.refresh()
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-md border-border/50 bg-card">
-        <CardHeader className="text-center">
-          <Link href="/" className="mb-4 inline-flex items-center justify-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 glow-yellow">
-              <Package className="h-5 w-5 text-primary" />
-            </div>
-            <span className="text-xl font-bold text-gradient">MMpokebot</span>
-          </Link>
-          <CardTitle>Prihlásenie</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-muted/30 border-border/50"
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Heslo"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-muted/30 border-border/50"
-              />
-            </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Prihlásiť sa
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Nemáš účet?{' '}
-            <Link href="/register" className="text-primary hover:underline">
-              Zaregistruj sa
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-screen items-center justify-center px-4" style={{ background: '#080412' }}>
+      <div className="w-full max-w-sm rounded-xl p-8 card-v">
+        <Link href="/" className="mb-6 block text-center">
+          <span className="text-2xl font-black text-white" style={{ fontFamily: 'Bebas Neue' }}>MM</span>
+          <span className="text-2xl logo-outline" style={{ fontFamily: 'Bebas Neue' }}>POKEBOT</span>
+        </Link>
+        <h1 className="mb-6 text-center font-heading text-2xl text-white">PRIHLÁSENIE</h1>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
+            className="h-10 text-sm" style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.15)', color: '#e2e8f0' }} />
+          <Input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required
+            className="h-10 text-sm" style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.15)', color: '#e2e8f0' }} />
+          {error && <p className="text-xs text-red-400">{error}</p>}
+          <Button type="submit" className="w-full font-label text-xs uppercase tracking-wider bg-[#8b5cf6] hover:bg-[#7c3aed] text-white" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}PRIHLÁSIŤ SA
+          </Button>
+        </form>
+        <p className="mt-4 text-center text-xs text-[#64748b]">
+          Nemáš účet? <Link href="/register" className="text-[#a78bfa] hover:underline">Zaregistruj sa</Link>
+        </p>
+      </div>
     </div>
   )
 }

@@ -2,13 +2,13 @@ name: Scrape Pokemon TCG Shops
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes
-  workflow_dispatch: {}  # Manual trigger
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,4 +19,5 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: false
         run: node scripts/scrape.js
