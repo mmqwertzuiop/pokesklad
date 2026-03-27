@@ -6,18 +6,18 @@ const STATUS_CONFIG: Record<
 > = {
   in_stock: {
     label: 'Skladom',
-    dotColor: 'bg-emerald-500',
-    textColor: 'text-emerald-400',
+    dotColor: 'bg-violet-500',
+    textColor: 'text-violet-400',
   },
   out_of_stock: {
     label: 'Vypredané',
-    dotColor: 'bg-red-500',
-    textColor: 'text-red-400',
+    dotColor: 'bg-slate-500',
+    textColor: 'text-slate-400',
   },
   preorder: {
     label: 'Predobjednávka',
-    dotColor: 'bg-amber-500',
-    textColor: 'text-amber-400',
+    dotColor: 'bg-violet-500',
+    textColor: 'text-violet-400',
   },
   unknown: {
     label: 'Neznámy',

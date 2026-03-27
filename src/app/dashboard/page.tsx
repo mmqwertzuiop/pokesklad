@@ -72,8 +72,8 @@ function RestockItem({ product }: { product: Product & { shop?: any } }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-500" />
           </span>
           <h4 className="truncate text-sm font-semibold">{product.name}</h4>
         </div>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
 
           {/* Stats Row */}
           <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard icon={Package} value={String(inStockCount)} label="Produktov skladom" color="from-emerald-500/10 to-emerald-500/5" />
+            <StatCard icon={Package} value={String(inStockCount)} label="Produktov skladom" color="from-violet-500/10 to-violet-500/5" />
             <StatCard icon={Eye} value={String(totalTracked)} label="Celkom sledovaných" color="from-blue-500/10 to-blue-500/5" />
             <StatCard icon={Store} value="8" label="Retail e-shopov" color="from-purple-500/10 to-purple-500/5" />
             <StatCard icon={RefreshCw} value="5 min" label="Interval kontroly" color="from-amber-500/10 to-amber-500/5" />
@@ -209,8 +209,8 @@ export default function DashboardPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-primary/80">Práve skladom</h2>
                 <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground/50">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
                   </span>
                   Live
                 </div>

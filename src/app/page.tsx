@@ -71,17 +71,17 @@ export default function LandingPage() {
           <div className="relative mx-auto max-w-5xl px-4 pb-8 pt-16 sm:px-6 sm:pt-24">
             <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center">
 
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-label text-[10px] uppercase tracking-wider card-v" style={{ color: '#22c55e' }}>
-                <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#22c55e]" /></span>
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-label text-[10px] uppercase tracking-wider card-v" style={{ color: '#a78bfa' }}>
+                <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8b5cf6] opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#8b5cf6]" /></span>
                 MONITORING 11 E-SHOPOV
               </div>
 
               <h1 className="font-heading text-5xl text-white sm:text-6xl lg:text-7xl">
                 KÚP ZA{' '}
-                <span className="price-green">RETAIL</span>
+                <span className="text-white">RETAIL</span>
                 <br />
                 NIE ZA{' '}
-                <span className="price-red line-through decoration-2">RESELL</span>
+                <span className="text-[#475569] line-through decoration-1">RESELL</span>
               </h1>
 
               <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-[#94a3b8]">
@@ -105,8 +105,8 @@ export default function LandingPage() {
         <section className="mx-auto max-w-5xl px-4 pb-16 pt-10 sm:px-6">
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#22c55e]" /></span>
-              <span className="font-label text-[10px] uppercase tracking-wider text-[#22c55e]">PRÁVE SKLADOM</span>
+              <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8b5cf6] opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#8b5cf6]" /></span>
+              <span className="font-label text-[10px] uppercase tracking-wider text-[#a78bfa]">PRÁVE SKLADOM</span>
             </div>
             <Link href="/dashboard" className="flex items-center gap-1 font-label text-[10px] uppercase tracking-wider text-[#64748b] hover:text-[#a78bfa]">
               VŠETKY <ChevronRight className="h-3 w-3" />
@@ -137,7 +137,7 @@ export default function LandingPage() {
                       </div>
                       <h3 className="line-clamp-2 text-[11px] font-semibold leading-snug text-[#e2e8f0]">{p.name}</h3>
                       <div className="mt-2 flex items-end justify-between">
-                        <span className="text-lg font-black tabular-nums price-green">{p.current_price?.toFixed(2)}<span className="text-[9px] font-normal text-[#64748b]">€</span></span>
+                        <span className="text-lg font-black tabular-nums price-highlight">{p.current_price?.toFixed(2)}<span className="text-[9px] font-normal text-[#64748b]">€</span></span>
                         <a href={p.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-md px-2 py-1 font-label text-[8px] uppercase tracking-wider text-[#a78bfa] transition-colors hover:bg-[rgba(139,92,246,0.15)]">
                           KÚPIŤ <ExternalLink className="h-2 w-2" />
                         </a>
@@ -164,10 +164,10 @@ export default function LandingPage() {
                   <div className="flex items-center gap-3 rounded-lg px-4 py-3 card-v card-v-hover transition-all">
                     <div className="min-w-0 flex-1 text-sm font-semibold text-[#e2e8f0]">{p.name}</div>
                     <div className="flex items-center gap-3 shrink-0 tabular-nums">
-                      <div className="text-right"><div className="font-label text-[8px] uppercase tracking-wider text-[#64748b]">RETAIL</div><div className="text-base font-black price-green">{p.retail}€</div></div>
+                      <div className="text-right"><div className="font-label text-[8px] uppercase tracking-wider text-[#64748b]">RETAIL</div><div className="text-base font-black price-highlight">{p.retail}€</div></div>
                       <span className="text-[#8b5cf6]/20">→</span>
-                      <div className="text-right"><div className="font-label text-[8px] uppercase tracking-wider text-[#64748b]">RESELL</div><div className="text-base font-black price-red line-through">{p.resell}€</div></div>
-                      <span className="hidden rounded-md px-2 py-1 font-label text-[10px] font-bold sm:inline price-green" style={{ background: 'rgba(34,197,94,0.1)' }}>
+                      <div className="text-right"><div className="font-label text-[8px] uppercase tracking-wider text-[#64748b]">RESELL</div><div className="text-base font-black price-dim line-through">{p.resell}€</div></div>
+                      <span className="hidden rounded-md px-2 py-1 font-label text-[10px] font-bold sm:inline price-highlight" style={{ background: 'rgba(139,92,246,0.1)' }}>
                         -{Math.round(p.resell - p.retail)}€
                       </span>
                     </div>
@@ -179,7 +179,7 @@ export default function LandingPage() {
             <FadeIn delay={0.3}>
               <div className="mt-6 rounded-lg p-5 text-center" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
                 <span className="font-label text-[10px] uppercase tracking-wider text-[#64748b]">CELKOVÁ ÚSPORA</span>
-                <span className="ml-3 font-heading text-3xl price-green"><Counter target={606} />€</span>
+                <span className="ml-3 font-heading text-3xl price-highlight"><Counter target={606} />€</span>
                 <span className="ml-3 font-label text-[10px] text-[#64748b]">= {Math.round(606 / 4.99)} MESIACOV PREMIUM</span>
               </div>
             </FadeIn>
@@ -195,11 +195,11 @@ export default function LandingPage() {
               <h2 className="font-heading text-center text-3xl text-white sm:text-4xl text-glow">23 MINÚT. TOĽKO MÁŠ ČAS.</h2>
             </FadeIn>
             <div className="relative mt-12">
-              <div className="absolute left-7 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom, rgba(34,197,94,0.3), rgba(139,92,246,0.3), rgba(239,68,68,0.3))' }} />
+              <div className="absolute left-7 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom, rgba(139,92,246,0.3), rgba(139,92,246,0.15), rgba(100,116,139,0.1))' }} />
               {[
-                { time: '14:02', text: 'E-shop doskladní produkt za retail cenu', c: 'rgba(34,197,94,0.08)', bc: 'rgba(34,197,94,0.2)', tc: '#22c55e' },
+                { time: '14:02', text: 'E-shop doskladní produkt za retail cenu', c: 'rgba(139,92,246,0.08)', bc: 'rgba(139,92,246,0.2)', tc: '#22c55e' },
                 { time: '14:04', text: 'MMpokebot pošle notifikáciu', c: 'rgba(139,92,246,0.08)', bc: 'rgba(139,92,246,0.2)', tc: '#a78bfa', ring: true },
-                { time: '14:25', text: 'Vypredané. Resell: 2-3x viac.', c: 'rgba(239,68,68,0.06)', bc: 'rgba(239,68,68,0.15)', tc: '#ef4444' },
+                { time: '14:25', text: 'Vypredané. Resell: 2-3x viac.', c: 'rgba(100,116,139,0.06)', bc: 'rgba(100,116,139,0.15)', tc: '#64748b' },
               ].map((t, i) => (
                 <FadeIn key={i} delay={i * 0.12}>
                   <div className="relative flex gap-4 pb-4">

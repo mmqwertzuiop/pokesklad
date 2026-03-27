@@ -55,8 +55,8 @@ export default function RegisterPage() {
       <div className="flex min-h-screen items-center justify-center px-4">
         <Card className="w-full max-w-md border-border/50 bg-card">
           <CardContent className="pt-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
-              <Package className="h-8 w-8 text-emerald-400" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-500/10">
+              <Package className="h-8 w-8 text-violet-400" />
             </div>
             <h2 className="text-xl font-bold">Registrácia úspešná!</h2>
             <p className="mt-2 text-sm text-muted-foreground">
