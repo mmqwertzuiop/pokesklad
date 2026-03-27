@@ -377,8 +377,10 @@ async function scrapeAlza(shopId) {
         const img = box.querySelector('img')?.src || '';
         const priceMatch = box.textContent.match(/([\d\s,]+)\s*€/);
         const price = priceMatch ? priceMatch[1].replace(/\s/g, '') : '';
-        const canBuy = !!box.querySelector('.btnk1, [class*="cart"], [class*="buy"]');
-        results.push({ name, href, img, price, canBuy });
+        const availText = box.querySelector('[class*="avail"]')?.textContent?.trim() || '';
+        const isInStock = availText.includes('Na sklade') || availText.includes('Skladom');
+        const isSoldOut = availText.includes('nedostupné') || availText.includes('skončil') || availText.includes('Strážiť');
+        results.push({ name, href, img, price, isInStock, availText });
       });
       return results;
     });
@@ -387,7 +389,7 @@ async function scrapeAlza(shopId) {
       const cat = classify(p.name); if (!cat) continue;
       const price = parseP(p.price, false);
       prods.push({ shop_id: shopId, name: cleanName(p.name), url: p.href, image_url: p.img || null,
-        category: cat, current_price: price, current_stock_status: p.canBuy ? 'in_stock' : 'out_of_stock', current_stock_quantity: null });
+        category: cat, current_price: price, current_stock_status: p.isInStock ? 'in_stock' : 'out_of_stock', current_stock_quantity: null });
     }
   } catch(e) { console.log('  Alza error:', e.message.substring(0, 60)); }
   await browser.close();
