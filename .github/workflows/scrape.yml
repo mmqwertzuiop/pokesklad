@@ -5,19 +5,39 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch: {}
 
+concurrency:
+  group: scraper
+  cancel-in-progress: false
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - run: npm install cheerio @supabase/supabase-js puppeteer
-      - name: Run scrapers
+      - name: Run scrapers in loop (every 5 min for ~55 min)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: false
-        run: node scripts/scrape.js
+        run: |
+          INTERVAL=300
+          END=$((SECONDS + 3300))
+          RUN=1
+          while [ "$SECONDS" -lt "$END" ]; do
+            START=$SECONDS
+            echo "=== Run $RUN at $(date -u) ==="
+            node scripts/scrape.js || echo "Scrape failed, continuing..."
+            ELAPSED=$((SECONDS - START))
+            RUN=$((RUN + 1))
+            REMAINING=$((INTERVAL - ELAPSED))
+            if [ "$REMAINING" -gt 0 ] && [ "$SECONDS" -lt "$END" ]; then
+              echo "Scrape took ${ELAPSED}s, sleeping ${REMAINING}s until next run..."
+              sleep "$REMAINING"
+            fi
+          done
+          echo "=== Loop finished: $((RUN - 1)) runs ==="
