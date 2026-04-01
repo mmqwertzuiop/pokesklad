@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Toaster } from "@/components/ui/sonner"
+import CookieConsent from "@/components/layout/cookie-consent"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" style={{ background: '#080412' }}>
         {children}
         <Toaster />
+        <CookieConsent />
       </body>
     </html>
   )

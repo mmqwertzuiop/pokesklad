@@ -1,18 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ExternalLink, Heart, Clock } from 'lucide-react'
+import { ExternalLink, Heart, Clock, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AvailabilityBadge } from './availability-badge'
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/constants'
+import { toast } from 'sonner'
 import type { Product } from '@/types/product'
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime()
   const min = Math.floor(diff / 60000)
-  if (min < 1) return 'Práve teraz'
+  if (min < 1) return 'Prave teraz'
   if (min < 60) return `${min} min`
   const hrs = Math.floor(min / 60)
   if (hrs < 24) return `${hrs}h`
@@ -28,8 +30,23 @@ export function ProductCard({
   isWatchlisted?: boolean
   onToggleWatchlist?: (productId: string) => void
 }) {
+  const [isToggling, setIsToggling] = useState(false)
   const categoryColor = CATEGORY_COLORS[product.category] || CATEGORY_COLORS.unknown
   const categoryLabel = CATEGORY_LABELS[product.category] || product.category
+
+  async function handleToggleWatchlist(e: React.MouseEvent) {
+    e.preventDefault()
+    if (!onToggleWatchlist || isToggling) return
+    setIsToggling(true)
+    try {
+      await onToggleWatchlist(product.id)
+      toast(isWatchlisted ? 'Odstranene zo sledovanych' : 'Pridane do sledovanych')
+    } catch {
+      toast('Chyba pri aktualizacii watchlistu')
+    } finally {
+      setIsToggling(false)
+    }
+  }
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/30 bg-card/50 transition-all duration-300 hover:border-primary/25 hover:shadow-[0_0_30px_-5px] hover:shadow-primary/10">
@@ -61,14 +78,21 @@ export function ProductCard({
           {/* Watchlist - top right */}
           {onToggleWatchlist && (
             <button
-              onClick={(e) => { e.preventDefault(); onToggleWatchlist(product.id); }}
+              onClick={handleToggleWatchlist}
+              disabled={isToggling}
               className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-all ${
+                isToggling ? 'opacity-50' : ''
+              } ${
                 isWatchlisted
                   ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
                   : 'bg-background/50 text-muted-foreground/50 hover:bg-background/70 hover:text-foreground'
               }`}
             >
-              <Heart className={`h-4 w-4 ${isWatchlisted ? 'fill-current' : ''}`} />
+              {isToggling ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Heart className={`h-4 w-4 ${isWatchlisted ? 'fill-current' : ''}`} />
+              )}
             </button>
           )}
         </div>
@@ -122,7 +146,7 @@ export function ProductCard({
           render={<a href={product.url} target="_blank" rel="noopener noreferrer" />}
         >
           <ExternalLink className="h-3 w-3" />
-          Kúpiť v {product.shop?.name || 'shope'}
+          Kupit v {product.shop?.name || 'shope'}
         </Button>
       </div>
     </div>

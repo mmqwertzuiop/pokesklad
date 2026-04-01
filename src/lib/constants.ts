@@ -27,6 +27,55 @@ export const SHOPS_CONFIG = [
     scrape_url: 'https://www.dracik.sk/pokemon-1076/',
     scraper_type: 'dataLayer' as const,
   },
+  {
+    name: 'Pompo SK',
+    slug: 'pomposk',
+    base_url: 'https://www.pompo.sk',
+    scrape_url: 'https://www.pompo.sk/pokemon-tcg',
+    scraper_type: 'html' as const,
+  },
+  {
+    name: 'Pompo CZ',
+    slug: 'pompocz',
+    base_url: 'https://www.pompo.cz',
+    scrape_url: 'https://www.pompo.cz/pokemon-tcg',
+    scraper_type: 'html' as const,
+  },
+  {
+    name: 'Bambule',
+    slug: 'bambule',
+    base_url: 'https://www.bambule.cz',
+    scrape_url: 'https://www.bambule.cz/pokemon-tcg',
+    scraper_type: 'html' as const,
+  },
+  {
+    name: 'Knihy Dobrovský',
+    slug: 'knihydobrovsky',
+    base_url: 'https://knihydobrovsky.cz',
+    scrape_url: 'https://knihydobrovsky.cz/pokemon-tcg',
+    scraper_type: 'html' as const,
+  },
+  {
+    name: 'Brloh',
+    slug: 'brloh',
+    base_url: 'https://www.brloh.sk',
+    scrape_url: 'https://www.brloh.sk/pokemon-c1781',
+    scraper_type: 'puppeteer' as const,
+  },
+  {
+    name: 'Smarty',
+    slug: 'smarty',
+    base_url: 'https://www.smarty.sk',
+    scrape_url: 'https://www.smarty.sk/Vyrobce/pokemon-company',
+    scraper_type: 'puppeteer' as const,
+  },
+  {
+    name: 'Alza',
+    slug: 'alza',
+    base_url: 'https://www.alza.sk',
+    scrape_url: 'https://www.alza.sk/search.htm?exps=pokemon+tcg',
+    scraper_type: 'puppeteer' as const,
+  },
 ] as const
 
 export const CATEGORY_LABELS: Record<string, string> = {

@@ -2,6 +2,7 @@
 
 import { Bell } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -10,9 +11,11 @@ import type { Notification } from '@/types/notification'
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
+
+  const unreadCount = notifications.filter(n => !n.is_read).length
 
   useEffect(() => {
     loadNotifications()
@@ -22,7 +25,6 @@ export function NotificationBell() {
         (payload) => {
           const n = payload.new as Notification
           setNotifications(prev => [n, ...prev])
-          setUnreadCount(prev => prev + 1)
         }
       ).subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -32,15 +34,28 @@ export function NotificationBell() {
     const res = await fetch('/api/notifications')
     if (res.ok) {
       const data = await res.json()
-      setNotifications(data.notifications)
-      setUnreadCount(data.notifications.filter((n: Notification) => !n.is_read).length)
+      setNotifications(data.notifications || [])
     }
+  }
+
+  async function markAsRead(id: string) {
+    await fetch('/api/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
   }
 
   async function markAllRead() {
     await fetch('/api/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'all' }) })
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-    setUnreadCount(0)
+  }
+
+  function handleNotificationClick(n: Notification) {
+    if (!n.is_read) {
+      markAsRead(n.id)
+    }
+    if (n.product_id) {
+      router.push(`/product/${n.product_id}`)
+      setOpen(false)
+    }
   }
 
   return (
@@ -55,18 +70,23 @@ export function NotificationBell() {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end" style={{ background: '#0d0820', border: '1px solid rgba(139,92,246,0.15)' }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}>
-          <h3 className="font-label text-[10px] uppercase tracking-wider text-[#a78bfa]">NOTIFIKÁCIE</h3>
+          <h3 className="font-label text-[10px] uppercase tracking-wider text-[#a78bfa]">NOTIFIKACIE</h3>
           {unreadCount > 0 && (
-            <button onClick={markAllRead} className="font-label text-[9px] uppercase tracking-wider text-[#64748b] hover:text-[#a78bfa]">OZNAČIŤ</button>
+            <button onClick={markAllRead} className="font-label text-[9px] uppercase tracking-wider text-[#64748b] hover:text-[#a78bfa]">OZNACIT</button>
           )}
         </div>
         <ScrollArea className="max-h-72">
           {notifications.length === 0 ? (
-            <div className="px-4 py-10 text-center text-xs text-[#475569]">Zatiaľ žiadne notifikácie</div>
+            <div className="px-4 py-10 text-center text-xs text-[#475569]">Zatial ziadne notifikacie</div>
           ) : (
             <div>
               {notifications.slice(0, 10).map(n => (
-                <div key={n.id} className="px-4 py-3 transition-colors hover:bg-[rgba(139,92,246,0.05)]" style={{ borderBottom: '1px solid rgba(139,92,246,0.05)' }}>
+                <div
+                  key={n.id}
+                  onClick={() => handleNotificationClick(n)}
+                  className={`cursor-pointer px-4 py-3 transition-colors hover:bg-[rgba(139,92,246,0.08)] ${!n.is_read ? 'bg-purple-900/30' : ''}`}
+                  style={{ borderBottom: '1px solid rgba(139,92,246,0.05)' }}
+                >
                   <div className="flex items-start gap-2">
                     {!n.is_read && <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8b5cf6]" />}
                     <div>

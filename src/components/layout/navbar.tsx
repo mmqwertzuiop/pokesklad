@@ -26,6 +26,11 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
           <Link href="/dashboard" className={`rounded-lg px-3 py-1.5 text-xs font-medium font-label transition-colors ${pathname.startsWith('/dashboard') ? 'bg-[rgba(139,92,246,0.15)] text-[#a78bfa]' : 'text-[#64748b] hover:text-[#94a3b8]'}`}>
             SKLADOM
           </Link>
+          {user && (
+            <Link href="/watchlist" className={`rounded-lg px-3 py-1.5 text-xs font-medium font-label transition-colors ${pathname.startsWith('/watchlist') ? 'bg-[rgba(139,92,246,0.15)] text-[#a78bfa]' : 'text-[#64748b] hover:text-[#94a3b8]'}`}>
+              SLEDOVANE
+            </Link>
+          )}
         </nav>
 
         {/* Right */}
@@ -37,8 +42,8 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
             </>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
-              <Button variant="ghost" size="sm" className="text-xs font-label text-[#64748b]" render={<Link href="/login" />}>PRIHLÁSIŤ</Button>
-              <Button size="sm" className="text-xs font-label bg-[#8b5cf6] hover:bg-[#7c3aed] text-white" render={<Link href="/register" />}>REGISTRÁCIA</Button>
+              <Button variant="ghost" size="sm" className="text-xs font-label text-[#64748b]" render={<Link href="/login" />}>PRIHLASIT</Button>
+              <Button size="sm" className="text-xs font-label bg-[#8b5cf6] hover:bg-[#7c3aed] text-white" render={<Link href="/register" />}>REGISTRACIA</Button>
             </div>
           )}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -49,10 +54,16 @@ export function Navbar({ user }: { user?: { email: string } | null }) {
               <SheetTitle className="font-heading text-xl text-white">MMPOKEBOT</SheetTitle>
               <nav className="mt-6 flex flex-col gap-1">
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-[#94a3b8] hover:text-white">Skladom</Link>
+                {user && (
+                  <Link href="/watchlist" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-[#94a3b8] hover:text-white">Sledovane</Link>
+                )}
+                {user && (
+                  <Link href="/settings" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-[#94a3b8] hover:text-white">Nastavenia</Link>
+                )}
                 {!user && (
                   <div className="mt-4 flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(139,92,246,0.15)' }}>
-                    <Button variant="ghost" size="sm" render={<Link href="/login" onClick={() => setOpen(false)} />}>Prihlásiť</Button>
-                    <Button size="sm" className="bg-[#8b5cf6] text-white" render={<Link href="/register" onClick={() => setOpen(false)} />}>Registrácia</Button>
+                    <Button variant="ghost" size="sm" render={<Link href="/login" onClick={() => setOpen(false)} />}>Prihlasit</Button>
+                    <Button size="sm" className="bg-[#8b5cf6] text-white" render={<Link href="/register" onClick={() => setOpen(false)} />}>Registracia</Button>
                   </div>
                 )}
               </nav>

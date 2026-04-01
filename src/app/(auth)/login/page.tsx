@@ -43,6 +43,11 @@ export default function LoginPage() {
           <Button type="submit" className="w-full font-label text-xs uppercase tracking-wider bg-[#8b5cf6] hover:bg-[#7c3aed] text-white" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}PRIHLÁSIŤ SA
           </Button>
+          <div className="mt-2 text-right">
+            <Link href="/reset-password" className="text-sm text-purple-400 hover:text-purple-300 underline">
+              Zabudnuté heslo?
+            </Link>
+          </div>
         </form>
         <p className="mt-4 text-center text-xs text-[#64748b]">
           Nemáš účet? <Link href="/register" className="text-[#a78bfa] hover:underline">Zaregistruj sa</Link>

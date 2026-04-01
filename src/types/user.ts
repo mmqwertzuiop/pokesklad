@@ -4,6 +4,8 @@ export interface Profile {
   display_name: string | null
   tier: 'free' | 'premium' | 'pro'
   notify_in_app: boolean
+  notify_email: boolean
+  notify_price_drop: boolean
   notify_categories: string[]
   notify_shops: string[] | null
   created_at: string

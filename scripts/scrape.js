@@ -708,7 +708,7 @@ async function main() {
 
             // ─── Create notifications for users with notify_in_app=true ───
             const { data: users } = await supabase.from('profiles')
-              .select('id')
+              .select('id, email, notify_email')
               .eq('notify_in_app', true);
             if (users && users.length > 0) {
               const notifs = users.map(u => ({
@@ -719,6 +719,84 @@ async function main() {
                 product_id: existing.id,
               }));
               await supabase.from('notifications').insert(notifs);
+            }
+
+            // ─── Send restock emails ───
+            try {
+              const resendKey = process.env.RESEND_API_KEY;
+              if (resendKey && users && users.length > 0) {
+                const emailUsers = users.filter(u => u.notify_email && u.email);
+                for (const eu of emailUsers) {
+                  try {
+                    const priceText = p.current_price ? `${p.current_price} \u20ac` : 'neuveden\u00e1 cena';
+                    const emailHtml = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background-color:#0a0a1a;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a1a;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color:#1a1a2e;border-radius:12px;overflow:hidden;"><tr><td style="background-color:#a855f7;padding:24px 32px;"><h1 style="margin:0;color:#fff;font-size:22px;">Pok\u00e9Sklad</h1></td></tr><tr><td style="padding:32px;"><h2 style="color:#fff;margin:0 0 16px;">Produkt je op\u00e4\u0165 skladom!</h2><p style="color:#d1d5db;font-size:16px;margin:0 0 8px;"><strong style="color:#a855f7;">${p.name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">Obchod: <strong style="color:#fff;">${sm[slug].name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 24px;">Cena: <strong style="color:#fff;">${priceText}</strong></p><a href="${p.url}" style="display:inline-block;background-color:#a855f7;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:16px;font-weight:bold;">Zobrazi\u0165 produkt</a></td></tr><tr><td style="padding:24px 32px;border-top:1px solid #2a2a3e;"><p style="color:#6b7280;font-size:12px;margin:0;">Pre odhl\u00e1senie z emailov upravte nastavenia vo svojom profile na Pok\u00e9Sklad.</p></td></tr></table></td></tr></table></body></html>`;
+                    await fetch('https://api.resend.com/emails', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+                      body: JSON.stringify({
+                        from: 'Pok\u00e9Sklad <noreply@pokesklad.sk>',
+                        to: eu.email,
+                        subject: `${p.name} je op\u00e4\u0165 skladom!`,
+                        html: emailHtml,
+                      }),
+                    });
+                  } catch (emailErr) {
+                    console.log(`  Email error for ${eu.email}: ${emailErr.message}`);
+                  }
+                }
+              }
+            } catch (emailErr) {
+              console.log(`  Email batch error: ${emailErr.message}`);
+            }
+          }
+
+          // ─── Price drop detection & notifications ───
+          if (existing.current_price && p.current_price && p.current_price < existing.current_price) {
+            console.log(`  *** PRICE DROP: ${p.name.substring(0, 50)} ${existing.current_price}\u20ac -> ${p.current_price}\u20ac ***`);
+
+            // Create price_drop notifications for users with notify_price_drop=true
+            const { data: priceDropUsers } = await supabase.from('profiles')
+              .select('id, email, notify_email')
+              .eq('notify_in_app', true)
+              .eq('notify_price_drop', true);
+            if (priceDropUsers && priceDropUsers.length > 0) {
+              const pdNotifs = priceDropUsers.map(u => ({
+                user_id: u.id,
+                type: 'price_drop',
+                title: `Zn\u00ed\u017eenie ceny: ${p.name}`,
+                body: `${existing.current_price} \u20ac \u2192 ${p.current_price} \u20ac`,
+                product_id: existing.id,
+              }));
+              await supabase.from('notifications').insert(pdNotifs);
+            }
+
+            // Send price drop emails
+            try {
+              const resendKey = process.env.RESEND_API_KEY;
+              if (resendKey && priceDropUsers && priceDropUsers.length > 0) {
+                const emailUsers = priceDropUsers.filter(u => u.notify_email && u.email);
+                for (const eu of emailUsers) {
+                  try {
+                    const savings = Math.round((existing.current_price - p.current_price) * 100) / 100;
+                    const pctOff = Math.round((savings / existing.current_price) * 100);
+                    const emailHtml = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background-color:#0a0a1a;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a1a;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color:#1a1a2e;border-radius:12px;overflow:hidden;"><tr><td style="background-color:#a855f7;padding:24px 32px;"><h1 style="margin:0;color:#fff;font-size:22px;">Pok\u00e9Sklad</h1></td></tr><tr><td style="padding:32px;"><h2 style="color:#fff;margin:0 0 16px;">Zn\u00ed\u017eenie ceny!</h2><p style="color:#d1d5db;font-size:16px;margin:0 0 8px;"><strong style="color:#a855f7;">${p.name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">Obchod: <strong style="color:#fff;">${sm[slug].name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">P\u00f4vodn\u00e1 cena: <span style="text-decoration:line-through;color:#9ca3af;">${existing.current_price} \u20ac</span></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">Nov\u00e1 cena: <strong style="color:#22c55e;font-size:18px;">${p.current_price} \u20ac</strong></p><p style="color:#22c55e;font-size:14px;margin:0 0 24px;">U\u0161etr\u00edte ${savings} \u20ac (${pctOff}%)</p><a href="${p.url}" style="display:inline-block;background-color:#a855f7;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:16px;font-weight:bold;">Zobrazi\u0165 produkt</a></td></tr><tr><td style="padding:24px 32px;border-top:1px solid #2a2a3e;"><p style="color:#6b7280;font-size:12px;margin:0;">Pre odhl\u00e1senie z emailov upravte nastavenia vo svojom profile na Pok\u00e9Sklad.</p></td></tr></table></td></tr></table></body></html>`;
+                    await fetch('https://api.resend.com/emails', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+                      body: JSON.stringify({
+                        from: 'Pok\u00e9Sklad <noreply@pokesklad.sk>',
+                        to: eu.email,
+                        subject: `Zn\u00ed\u017eenie ceny: ${p.name}`,
+                        html: emailHtml,
+                      }),
+                    });
+                  } catch (emailErr) {
+                    console.log(`  Price drop email error for ${eu.email}: ${emailErr.message}`);
+                  }
+                }
+              }
+            } catch (emailErr) {
+              console.log(`  Price drop email batch error: ${emailErr.message}`);
             }
           }
 

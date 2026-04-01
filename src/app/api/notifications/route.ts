@@ -15,17 +15,27 @@ export async function GET(request: NextRequest) {
   const limit = 20
   const from = (page - 1) * limit
 
-  const { data, count } = await supabase
-    .from('notifications')
-    .select('*', { count: 'exact' })
-    .eq('user_id', user.id)
-    .order('sent_at', { ascending: false })
-    .range(from, from + limit - 1)
+  const [notificationsResult, unreadResult] = await Promise.all([
+    supabase
+      .from('notifications')
+      .select('*', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('sent_at', { ascending: false })
+      .range(from, from + limit - 1),
+    supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false),
+  ])
+
+  const { data, count } = notificationsResult
+  const { count: unreadCount } = unreadResult
 
   return Response.json({
     notifications: data || [],
     total: count || 0,
-    unread: 0, // will be calculated below
+    unread_count: unreadCount || 0,
   })
 }
 
