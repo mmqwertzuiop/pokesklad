@@ -425,36 +425,61 @@ async function scrapeKnihy(shopId) {
 }
 
 // ===== BRLOH (SK, EUR) - Puppeteer required =====
+// Increased wait times + retry on 0 results for reliability.
 async function scrapeBrloh(shopId) {
   let puppeteer;
   try { puppeteer = require('puppeteer'); } catch { console.log('  Puppeteer not available, skipping Brloh'); return []; }
   const prods = [];
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
+  });
   const page = await browser.newPage();
   await page.setUserAgent(H['User-Agent']);
-  try {
-    await page.goto('https://www.brloh.sk/pokemon-c1781', { waitUntil: 'networkidle2', timeout: 30000 });
-    await delay(5000);
-    const rawProducts = await page.evaluate(() => {
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  });
+
+  async function extractProducts() {
+    return page.evaluate(() => {
       const results = [];
-      // Try multiple selectors for Brloh's layout
-      const containers = document.querySelectorAll('.box.browsingitem, [class*="product"], .item');
+      const containers = document.querySelectorAll('.box.browsingitem, [class*="product"], .item, [class*="Product"], article');
       containers.forEach(el => {
         if (!el.querySelector('img') || !el.querySelector('a')) return;
         const text = el.textContent || '';
         if (!text.includes('€')) return;
-        const nameEl = el.querySelector('h2, h3, h4, [class*="name"], [class*="title"]') || el.querySelector('a');
+        const nameEl = el.querySelector('h2, h3, h4, [class*="name"], [class*="title"], [class*="Name"], [class*="Title"]') || el.querySelector('a');
         const linkEl = el.querySelector('a[href]');
         results.push({
           name: nameEl?.textContent?.trim() || '',
           href: linkEl?.href || '',
           img: el.querySelector('img')?.src || '',
           price: text.match(/([\d,]+)\s*€/)?.[1] || '',
-          hasCart: !!el.querySelector('[class*="cart"], [class*="buy"], button'),
+          hasCart: !!el.querySelector('[class*="cart"], [class*="buy"], [class*="Cart"], [class*="Buy"], button'),
         });
       });
       return results;
     });
+  }
+
+  try {
+    await page.goto('https://www.brloh.sk/pokemon-c1781', { waitUntil: 'networkidle2', timeout: 45000 });
+    await delay(8000);
+    // Scroll to trigger lazy loading
+    await page.evaluate(() => window.scrollBy(0, 1500));
+    await delay(3000);
+
+    let rawProducts = await extractProducts();
+    // Retry once if 0 products (cold start issue)
+    if (rawProducts.length === 0) {
+      console.log('  Brloh: 0 on first try, retrying...');
+      await page.reload({ waitUntil: 'networkidle2', timeout: 45000 });
+      await delay(10000);
+      await page.evaluate(() => window.scrollBy(0, 1500));
+      await delay(3000);
+      rawProducts = await extractProducts();
+    }
+
     const seen = new Set();
     for (const p of rawProducts) {
       if (!p.name || !p.href || seen.has(p.href)) continue;
@@ -471,7 +496,7 @@ async function scrapeBrloh(shopId) {
         current_stock_quantity: null,
       });
     }
-  } catch(e) { console.log('  Brloh error:', e.message.substring(0, 80)); }
+  } catch(e) { console.log('  Brloh error:', e.message.substring(0, 120)); }
   await browser.close();
   return prods;
 }
@@ -482,9 +507,15 @@ async function scrapeSmarty(shopId) {
   let puppeteer;
   try { puppeteer = require('puppeteer'); } catch { console.log('  Puppeteer not available, skipping Smarty'); return []; }
   const prods = [];
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
+  });
   const page = await browser.newPage();
   await page.setUserAgent(H['User-Agent']);
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  });
   try {
     await page.goto('https://www.smarty.sk/Vyrobce/pokemon-company', { waitUntil: 'networkidle2', timeout: 30000 });
     await delay(5000);
@@ -564,42 +595,91 @@ async function scrapeSmarty(shopId) {
 }
 
 // ===== ALZA (SK, EUR) - Puppeteer required =====
-// Uses `a.name` selector for product names (not `a.browsinglink`).
-// Checks `[class*="avail"]` text for "Na sklade" vs "Momentálne nedostupné".
+// Anti-detection: removes webdriver flag, uses stealth args.
+// Tries multiple selector strategies for robustness.
 async function scrapeAlza(shopId) {
   let puppeteer;
   try { puppeteer = require('puppeteer'); } catch { console.log('  Puppeteer not available, skipping Alza'); return []; }
   const prods = [], seen = new Set();
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: [
+      '--no-sandbox', '--disable-setuid-sandbox',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-features=IsolateOrigins,site-per-process',
+      '--window-size=1920,1080',
+    ],
+  });
   const page = await browser.newPage();
-  await page.setUserAgent(H['User-Agent']);
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+  await page.setExtraHTTPHeaders({ 'Accept-Language': 'sk-SK,sk;q=0.9' });
+  // Remove webdriver detection
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    Object.defineProperty(navigator, 'languages', { get: () => ['sk-SK', 'sk', 'cs'] });
+    window.chrome = { runtime: {} };
+  });
   try {
-    // Visit homepage first to get cookies
-    await page.goto('https://www.alza.sk/', { waitUntil: 'networkidle2', timeout: 30000 });
+    // Visit homepage first for cookies
+    await page.goto('https://www.alza.sk/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await delay(3000);
+    // Try category page first (more stable than search)
+    await page.goto('https://www.alza.sk/pokemon-tcg/18904440.htm', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await delay(8000);
+    // Scroll to load lazy content
+    await page.evaluate(() => window.scrollBy(0, 1000));
     await delay(2000);
-    // Now search
-    await page.goto('https://www.alza.sk/search.htm?exps=pokemon+tcg', { waitUntil: 'networkidle2', timeout: 30000 });
-    await delay(10000);
+    await page.evaluate(() => window.scrollBy(0, 2000));
+    await delay(2000);
 
     const rawProducts = await page.evaluate(() => {
       const results = [];
-      // Main product containers
-      document.querySelectorAll('.box.browsingitem, [class*="browsingitem"], [class*="product-box"]').forEach(box => {
-        // Use a.name selector for names (NOT a.browsinglink)
-        const nameLink = box.querySelector('a.name');
-        if (!nameLink) return;
-        const name = nameLink.textContent.trim();
-        const href = nameLink.href;
-        const img = box.querySelector('img')?.src || '';
-        const priceMatch = box.textContent.match(/([\d\s,]+)\s*€/);
+      // Strategy 1: browsingitem containers (classic Alza)
+      const selectors = [
+        '.browsingitem',
+        '[class*="browsingitem"]',
+        '[data-impression-id]',
+        '.box.browsingitem',
+        '[class*="ProductCard"]',
+        '[class*="product-box"]',
+      ];
+      let containers = [];
+      for (const sel of selectors) {
+        containers = document.querySelectorAll(sel);
+        if (containers.length > 0) break;
+      }
+      // If still nothing, try any element with price + link
+      if (containers.length === 0) {
+        containers = document.querySelectorAll('div[class*="tile"], div[class*="Item"], article');
+      }
+      containers.forEach(box => {
+        // Name: try multiple selectors
+        const nameEl = box.querySelector('a.name, a.browsinglink, a[data-impression-name], [class*="name"] a, [class*="title"] a, h3 a, h2 a');
+        if (!nameEl) return;
+        const name = nameEl.textContent.trim();
+        const href = nameEl.href;
+        if (!name || name.length < 5) return;
+        // Image
+        const imgEl = box.querySelector('img[src*="cdn"], img[src*="image"], img');
+        const img = imgEl?.src || '';
+        // Price
+        const text = box.textContent || '';
+        const priceMatch = text.match(/([\d\s,]+)\s*€/);
         const price = priceMatch ? priceMatch[1].replace(/\s/g, '') : '';
-        // Check [class*="avail"] for stock text
-        const availEl = box.querySelector('[class*="avail"]');
+        // Availability
+        const availEl = box.querySelector('[class*="avail"], [class*="stock"], [class*="Avail"], [class*="Stock"]');
         const availText = availEl?.textContent?.trim() || '';
         results.push({ name, href, img, price, availText });
       });
       return results;
     });
+
+    console.log(`  Alza: ${rawProducts.length} raw items found`);
+    if (rawProducts.length === 0) {
+      const title = await page.title();
+      const url = page.url();
+      console.log(`  Alza debug: page title="${title}", url=${url}`);
+    }
 
     for (const p of rawProducts) {
       if (!p.name || seen.has(p.href)) continue;
@@ -608,10 +688,9 @@ async function scrapeAlza(shopId) {
       const cat = classify(name);
       if (!cat) continue;
       const price = parseP(p.price, false);
-      // Stock: "Na sklade" / "Skladom" = in_stock, "Momentálne nedostupné" / "skončil" = out_of_stock
-      const al = p.availText.toLowerCase();
+      const al = (p.availText || '').toLowerCase();
       let stockStatus = 'unknown';
-      if (al.includes('na sklade') || al.includes('skladom')) {
+      if (al.includes('na sklade') || al.includes('skladom') || al.includes('ihneď')) {
         stockStatus = 'in_stock';
       } else if (al.includes('nedostupné') || al.includes('skončil') || al.includes('strážiť') || al.includes('momentálne')) {
         stockStatus = 'out_of_stock';
@@ -624,7 +703,7 @@ async function scrapeAlza(shopId) {
         current_stock_quantity: null,
       });
     }
-  } catch(e) { console.log('  Alza error:', e.message.substring(0, 80)); }
+  } catch(e) { console.log('  Alza error:', e.message.substring(0, 120)); }
   await browser.close();
   return prods;
 }
