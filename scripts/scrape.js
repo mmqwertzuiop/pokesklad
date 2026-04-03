@@ -9,6 +9,27 @@ const H = {
 const delay = ms => new Promise(r => setTimeout(r, ms));
 const CZK_EUR = 0.04;
 
+// ─── Image quality filter ─────────────────────────────────────────
+// Rejects placeholder, data: URIs, SVGs, tiny/default images
+function isValidImage(url) {
+  if (!url) return false;
+  const l = url.toLowerCase();
+  if (l.includes('data:')) return false;
+  if (l.includes('svg+xml')) return false;
+  if (l.includes('placeholder')) return false;
+  if (l.includes('default.image')) return false;
+  if (l.includes('no-image')) return false;
+  if (l.includes('noimage')) return false;
+  if (l.includes('blank.')) return false;
+  if (l.includes('loading')) return false;
+  if (l.includes('spinner')) return false;
+  if (l.includes('1x1.')) return false;
+  if (l.includes('pixel.')) return false;
+  if (l.endsWith('.svg')) return false;
+  if (l.endsWith('.gif') && (l.includes('spacer') || l.includes('blank'))) return false;
+  return true;
+}
+
 // ─── Product classifier ───────────────────────────────────────────
 // STRICT: Only sealed TCG products pass through.
 // Checks for both 'pokemon' AND 'pokémon' (accented).
@@ -109,11 +130,11 @@ function resolveUrl(href, base) {
 // ─── Fetch og:image from a product detail page ───────────────────
 async function fetchOgImage(url) {
   try {
-    const r = await fetch(url, { headers: H });
+    const r = await fetch(url, { headers: H, signal: AbortSignal.timeout(8000) });
     if (!r.ok) return null;
     const $ = cheerio.load(await r.text());
     const img = $('meta[property="og:image"]').attr('content');
-    if (img && !img.includes('data:') && !img.includes('svg+xml')) return img;
+    if (img && isValidImage(img)) return img;
   } catch {}
   return null;
 }
@@ -408,7 +429,8 @@ async function scrapeKnihy(shopId) {
     const cat = classify(name);
     if (!cat) return;
     const imgSrc = parent.find('img').first().attr('src');
-    const img = imgSrc ? resolveUrl(imgSrc, 'https://knihydobrovsky.cz') : null;
+    const imgResolved = imgSrc ? resolveUrl(imgSrc, 'https://knihydobrovsky.cz') : null;
+    const img = isValidImage(imgResolved) ? imgResolved : null;
     // Price from "X Kč" pattern (CZK -> EUR)
     const priceMatch = parent.text().match(/(\d[\d\s]*)\s*Kč/);
     const price = priceMatch ? parseP(priceMatch[1], true) : null;
@@ -577,9 +599,9 @@ async function scrapeSmarty(shopId) {
         } catch { /* skip detail fetch errors */ }
       }
 
-      // Determine stock status
+      // Determine stock status — never assume in_stock when unknown
       const { s } = stk(p.availText);
-      const stockStatus = s !== 'unknown' ? s : 'in_stock'; // Smarty usually only shows available items
+      const stockStatus = s !== 'unknown' ? s : 'unknown';
 
       prods.push({
         shop_id: shopId, name, url: p.href,
@@ -799,11 +821,12 @@ async function main() {
       totalProducts++;
       const shopName = shopNameById[p.shop_id] || 'Unknown';
 
-      // Fix missing images for in-stock products
-      if (!p.image_url && p.current_stock_status === 'in_stock') {
+      // Validate and fix image — reject placeholders, fetch OG as fallback
+      if (!isValidImage(p.image_url)) p.image_url = null;
+      if (!p.image_url) {
         const ogImg = await fetchOgImage(p.url);
         if (ogImg) p.image_url = ogImg;
-        await delay(300);
+        await delay(200);
       }
 
       const norm = p.name.toLowerCase()
@@ -926,6 +949,15 @@ async function main() {
       .eq('notification_sent', false)
       .eq('new_status', 'in_stock');
   }
+
+  // ─── Stale product cleanup: not seen in 48h → out_of_stock ───
+  const staleThreshold = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const { count: staleCount } = await supabase.from('products')
+    .update({ current_stock_status: 'out_of_stock' })
+    .lt('last_seen_at', staleThreshold)
+    .in('current_stock_status', ['in_stock', 'unknown'])
+    .select('*', { count: 'exact', head: true });
+  if (staleCount > 0) console.log(`  Marked ${staleCount} stale products as out_of_stock`);
 
   console.log(`DONE: ${totalProducts} products | ${totalRestocks} restocks`);
 }

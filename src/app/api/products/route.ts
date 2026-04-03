@@ -31,7 +31,15 @@ export async function GET(request: NextRequest) {
   }
 
   if (status && status !== 'all') {
-    query = query.eq('current_stock_status', status)
+    if (status === 'in_stock') {
+      // Only show truly in-stock items, exclude unknown
+      query = query.eq('current_stock_status', 'in_stock')
+    } else {
+      query = query.eq('current_stock_status', status)
+    }
+  } else {
+    // Default: exclude unknown status products
+    query = query.neq('current_stock_status', 'unknown')
   }
 
   if (search) {
