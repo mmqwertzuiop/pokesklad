@@ -19,24 +19,25 @@ jobs:
         with:
           node-version: '20'
       - run: npm install cheerio @supabase/supabase-js puppeteer
-      - name: Run scrapers in loop (every 5 min for ~55 min)
+      - name: Run scrapers in loop (~2 min fast, puppeteer every 3rd)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: false
         run: |
-          INTERVAL=300
+          INTERVAL=120
           END=$((SECONDS + 3300))
           RUN=1
           while [ "$SECONDS" -lt "$END" ]; do
             START=$SECONDS
             echo "=== Run $RUN at $(date -u) ==="
-            node scripts/scrape.js || echo "Scrape failed, continuing..."
+            node scripts/scrape.js --run=$RUN || echo "Scrape failed, continuing..."
             ELAPSED=$((SECONDS - START))
+            echo "Run $RUN took ${ELAPSED}s"
             RUN=$((RUN + 1))
             REMAINING=$((INTERVAL - ELAPSED))
             if [ "$REMAINING" -gt 0 ] && [ "$SECONDS" -lt "$END" ]; then
-              echo "Scrape took ${ELAPSED}s, sleeping ${REMAINING}s until next run..."
               sleep "$REMAINING"
             fi
           done

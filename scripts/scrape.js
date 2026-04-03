@@ -709,9 +709,9 @@ async function scrapeAlza(shopId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SCRAPER REGISTRY
+// SCRAPER REGISTRY — split into FAST (cheerio) and SLOW (puppeteer)
 // ═══════════════════════════════════════════════════════════════════
-const SCRAPERS = {
+const FAST_SCRAPERS = {
   nekonecno: scrapeNekonecno,
   ihrysko: scrapeIhrysko,
   xzone: scrapeXzone,
@@ -720,15 +720,22 @@ const SCRAPERS = {
   pompocz: scrapePompoCz,
   bambule: scrapeBambule,
   knihydobrovsky: scrapeKnihy,
+};
+
+const SLOW_SCRAPERS = {
   brloh: scrapeBrloh,
   smarty: scrapeSmarty,
   alza: scrapeAlza,
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// MAIN
+// MAIN — cheerio scrapers run in parallel, puppeteer every 3rd run
 // ═══════════════════════════════════════════════════════════════════
 async function main() {
+  const runArg = process.argv.find(a => a.startsWith('--run='));
+  const runNum = runArg ? parseInt(runArg.split('=')[1]) : 1;
+  const includeSlow = runNum % 3 === 1; // Puppeteer on runs 1, 4, 7, 10...
+
   const { data: shops } = await supabase.from('shops').select('id, slug, name').eq('is_active', true);
   if (!shops || shops.length === 0) {
     console.log('No active shops found.');
@@ -739,188 +746,180 @@ async function main() {
 
   let totalProducts = 0, totalRestocks = 0;
 
-  for (const [slug, fn] of Object.entries(SCRAPERS)) {
-    if (!sm[slug]) continue;
-    console.log(`Scraping ${sm[slug].name}...`);
+  // ─── Run FAST scrapers in parallel ───
+  console.log(`--- FAST scrapers (parallel) ---`);
+  const fastEntries = Object.entries(FAST_SCRAPERS).filter(([slug]) => sm[slug]);
+  const fastResults = await Promise.allSettled(
+    fastEntries.map(async ([slug, fn]) => {
+      try {
+        const products = await fn(sm[slug].id);
+        console.log(`  ${sm[slug].name}: ${products.length} products`);
+        return { slug, products };
+      } catch (e) {
+        console.log(`  ${sm[slug].name} ERROR: ${e.message.substring(0, 80)}`);
+        return { slug, products: [] };
+      }
+    })
+  );
+
+  // Collect fast results
+  const allProducts = [];
+  for (const r of fastResults) {
+    if (r.status === 'fulfilled' && r.value.products.length > 0) {
+      allProducts.push(...r.value.products);
+    }
+  }
+
+  // ─── Run SLOW scrapers sequentially (only every 3rd run) ───
+  if (includeSlow) {
+    console.log(`--- SLOW scrapers (puppeteer, run ${runNum}) ---`);
+    for (const [slug, fn] of Object.entries(SLOW_SCRAPERS)) {
+      if (!sm[slug]) continue;
+      console.log(`  Scraping ${sm[slug].name}...`);
+      try {
+        const products = await fn(sm[slug].id);
+        console.log(`  ${sm[slug].name}: ${products.length} products`);
+        allProducts.push(...products);
+      } catch (e) {
+        console.log(`  ${sm[slug].name} ERROR: ${e.message.substring(0, 80)}`);
+      }
+    }
+  } else {
+    console.log(`--- Skipping SLOW scrapers (run ${runNum}, next on ${runNum + (3 - ((runNum - 1) % 3))}) ---`);
+  }
+
+  // ─── Build shop_id -> name lookup ───
+  const shopNameById = {};
+  shops.forEach(s => { shopNameById[s.id] = s.name; });
+
+  // ─── Process all products ───
+  console.log(`--- Processing ${allProducts.length} products ---`);
+  for (const p of allProducts) {
     try {
-      const products = await fn(sm[slug].id);
-      console.log(`  ${products.length} products found`);
-      totalProducts += products.length;
+      totalProducts++;
+      const shopName = shopNameById[p.shop_id] || 'Unknown';
 
-      for (const p of products) {
-        // ─── Fix missing images for in-stock products ───
-        if (!p.image_url && p.current_stock_status === 'in_stock') {
-          const ogImg = await fetchOgImage(p.url);
-          if (ogImg) p.image_url = ogImg;
-          await delay(500);
-        }
+      // Fix missing images for in-stock products
+      if (!p.image_url && p.current_stock_status === 'in_stock') {
+        const ogImg = await fetchOgImage(p.url);
+        if (ogImg) p.image_url = ogImg;
+        await delay(300);
+      }
 
-        // ─── Normalized name for matching ───
-        const norm = p.name.toLowerCase()
-          .replace(/pokémon/g, 'pokemon')
-          .replace(/pokemon\s*tcg:?\s*/g, '')
-          .replace(/\s+/g, ' ')
-          .trim();
+      const norm = p.name.toLowerCase()
+        .replace(/pokémon/g, 'pokemon')
+        .replace(/pokemon\s*tcg:?\s*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-        // ─── Upsert: deduplicate by shop_id + url ───
-        // First check if the product exists (for stock transition detection)
-        const { data: existing } = await supabase.from('products')
-          .select('id, current_stock_status, current_price, image_url')
-          .eq('shop_id', p.shop_id)
-          .eq('url', p.url)
-          .single();
+      const { data: existing } = await supabase.from('products')
+        .select('id, current_stock_status, current_price, image_url')
+        .eq('shop_id', p.shop_id)
+        .eq('url', p.url)
+        .single();
 
-        const now = new Date().toISOString();
+      const now = new Date().toISOString();
 
-        if (existing) {
-          // ─── Stock transition: out_of_stock -> in_stock ───
-          if (existing.current_stock_status !== 'in_stock' && p.current_stock_status === 'in_stock') {
-            await supabase.from('stock_transitions').insert({
-              product_id: existing.id,
-              previous_status: existing.current_stock_status,
-              new_status: 'in_stock',
-              previous_price: existing.current_price,
-              new_price: p.current_price,
-            });
-            totalRestocks++;
-            console.log(`  *** RESTOCK: ${p.name.substring(0, 50)} ***`);
-
-            // ─── Create notifications for users with notify_in_app=true ───
-            const { data: users } = await supabase.from('profiles')
-              .select('id, email, notify_email')
-              .eq('notify_in_app', true);
-            if (users && users.length > 0) {
-              const notifs = users.map(u => ({
-                user_id: u.id,
-                type: 'restock',
-                title: `${p.name} je skladom!`,
-                body: `${p.current_price ? p.current_price + ' \u20ac' : ''} - doskladnen\u00e9!`,
-                product_id: existing.id,
-              }));
-              await supabase.from('notifications').insert(notifs);
-            }
-
-            // ─── Send restock emails ───
-            try {
-              const resendKey = process.env.RESEND_API_KEY;
-              if (resendKey && users && users.length > 0) {
-                const emailUsers = users.filter(u => u.notify_email && u.email);
-                for (const eu of emailUsers) {
-                  try {
-                    const priceText = p.current_price ? `${p.current_price} \u20ac` : 'neuveden\u00e1 cena';
-                    const emailHtml = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background-color:#0a0a1a;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a1a;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color:#1a1a2e;border-radius:12px;overflow:hidden;"><tr><td style="background-color:#a855f7;padding:24px 32px;"><h1 style="margin:0;color:#fff;font-size:22px;">Pok\u00e9Sklad</h1></td></tr><tr><td style="padding:32px;"><h2 style="color:#fff;margin:0 0 16px;">Produkt je op\u00e4\u0165 skladom!</h2><p style="color:#d1d5db;font-size:16px;margin:0 0 8px;"><strong style="color:#a855f7;">${p.name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">Obchod: <strong style="color:#fff;">${sm[slug].name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 24px;">Cena: <strong style="color:#fff;">${priceText}</strong></p><a href="${p.url}" style="display:inline-block;background-color:#a855f7;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:16px;font-weight:bold;">Zobrazi\u0165 produkt</a></td></tr><tr><td style="padding:24px 32px;border-top:1px solid #2a2a3e;"><p style="color:#6b7280;font-size:12px;margin:0;">Pre odhl\u00e1senie z emailov upravte nastavenia vo svojom profile na Pok\u00e9Sklad.</p></td></tr></table></td></tr></table></body></html>`;
-                    await fetch('https://api.resend.com/emails', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
-                      body: JSON.stringify({
-                        from: 'Pok\u00e9Sklad <noreply@pokesklad.sk>',
-                        to: eu.email,
-                        subject: `${p.name} je op\u00e4\u0165 skladom!`,
-                        html: emailHtml,
-                      }),
-                    });
-                  } catch (emailErr) {
-                    console.log(`  Email error for ${eu.email}: ${emailErr.message}`);
-                  }
-                }
-              }
-            } catch (emailErr) {
-              console.log(`  Email batch error: ${emailErr.message}`);
-            }
-          }
-
-          // ─── Price drop detection & notifications ───
-          if (existing.current_price && p.current_price && p.current_price < existing.current_price) {
-            console.log(`  *** PRICE DROP: ${p.name.substring(0, 50)} ${existing.current_price}\u20ac -> ${p.current_price}\u20ac ***`);
-
-            // Create price_drop notifications for users with notify_price_drop=true
-            const { data: priceDropUsers } = await supabase.from('profiles')
-              .select('id, email, notify_email')
-              .eq('notify_in_app', true)
-              .eq('notify_price_drop', true);
-            if (priceDropUsers && priceDropUsers.length > 0) {
-              const pdNotifs = priceDropUsers.map(u => ({
-                user_id: u.id,
-                type: 'price_drop',
-                title: `Zn\u00ed\u017eenie ceny: ${p.name}`,
-                body: `${existing.current_price} \u20ac \u2192 ${p.current_price} \u20ac`,
-                product_id: existing.id,
-              }));
-              await supabase.from('notifications').insert(pdNotifs);
-            }
-
-            // Send price drop emails
-            try {
-              const resendKey = process.env.RESEND_API_KEY;
-              if (resendKey && priceDropUsers && priceDropUsers.length > 0) {
-                const emailUsers = priceDropUsers.filter(u => u.notify_email && u.email);
-                for (const eu of emailUsers) {
-                  try {
-                    const savings = Math.round((existing.current_price - p.current_price) * 100) / 100;
-                    const pctOff = Math.round((savings / existing.current_price) * 100);
-                    const emailHtml = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background-color:#0a0a1a;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a1a;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color:#1a1a2e;border-radius:12px;overflow:hidden;"><tr><td style="background-color:#a855f7;padding:24px 32px;"><h1 style="margin:0;color:#fff;font-size:22px;">Pok\u00e9Sklad</h1></td></tr><tr><td style="padding:32px;"><h2 style="color:#fff;margin:0 0 16px;">Zn\u00ed\u017eenie ceny!</h2><p style="color:#d1d5db;font-size:16px;margin:0 0 8px;"><strong style="color:#a855f7;">${p.name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">Obchod: <strong style="color:#fff;">${sm[slug].name}</strong></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">P\u00f4vodn\u00e1 cena: <span style="text-decoration:line-through;color:#9ca3af;">${existing.current_price} \u20ac</span></p><p style="color:#d1d5db;font-size:14px;margin:0 0 4px;">Nov\u00e1 cena: <strong style="color:#22c55e;font-size:18px;">${p.current_price} \u20ac</strong></p><p style="color:#22c55e;font-size:14px;margin:0 0 24px;">U\u0161etr\u00edte ${savings} \u20ac (${pctOff}%)</p><a href="${p.url}" style="display:inline-block;background-color:#a855f7;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:16px;font-weight:bold;">Zobrazi\u0165 produkt</a></td></tr><tr><td style="padding:24px 32px;border-top:1px solid #2a2a3e;"><p style="color:#6b7280;font-size:12px;margin:0;">Pre odhl\u00e1senie z emailov upravte nastavenia vo svojom profile na Pok\u00e9Sklad.</p></td></tr></table></td></tr></table></body></html>`;
-                    await fetch('https://api.resend.com/emails', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
-                      body: JSON.stringify({
-                        from: 'Pok\u00e9Sklad <noreply@pokesklad.sk>',
-                        to: eu.email,
-                        subject: `Zn\u00ed\u017eenie ceny: ${p.name}`,
-                        html: emailHtml,
-                      }),
-                    });
-                  } catch (emailErr) {
-                    console.log(`  Price drop email error for ${eu.email}: ${emailErr.message}`);
-                  }
-                }
-              }
-            } catch (emailErr) {
-              console.log(`  Price drop email batch error: ${emailErr.message}`);
-            }
-          }
-
-          // Update existing product
-          await supabase.from('products').update({
-            name: p.name,
-            normalized_name: norm,
-            current_price: p.current_price,
-            current_stock_status: p.current_stock_status,
-            current_stock_quantity: p.current_stock_quantity,
-            image_url: p.image_url || existing.image_url,
-            category: p.category,
-            last_seen_at: now,
-            updated_at: now,
-            last_in_stock_at: p.current_stock_status === 'in_stock' ? now : undefined,
-          }).eq('id', existing.id);
-
-        } else {
-          // Insert new product — use upsert with onConflict to prevent race-condition duplicates
-          await supabase.from('products').upsert({
-            shop_id: p.shop_id,
-            name: p.name,
-            normalized_name: norm,
-            url: p.url,
-            image_url: p.image_url,
-            category: p.category,
-            current_price: p.current_price,
-            current_stock_status: p.current_stock_status,
-            current_stock_quantity: p.current_stock_quantity,
-            is_tracked: true,
-            last_seen_at: now,
-            updated_at: now,
-            last_in_stock_at: p.current_stock_status === 'in_stock' ? now : null,
-          }, {
-            onConflict: 'shop_id,url',
-            ignoreDuplicates: false,
+      if (existing) {
+        // ─── Stock transition: out_of_stock -> in_stock ───
+        if (existing.current_stock_status !== 'in_stock' && p.current_stock_status === 'in_stock') {
+          await supabase.from('stock_transitions').insert({
+            product_id: existing.id,
+            previous_status: existing.current_stock_status,
+            new_status: 'in_stock',
+            previous_price: existing.current_price,
+            new_price: p.current_price,
           });
+          totalRestocks++;
+          console.log(`  *** RESTOCK: ${p.name.substring(0, 50)} @ ${shopName} ***`);
+
+          const { data: users } = await supabase.from('profiles')
+            .select('id, email, notify_email')
+            .eq('notify_in_app', true);
+          if (users && users.length > 0) {
+            await supabase.from('notifications').insert(users.map(u => ({
+              user_id: u.id, type: 'restock',
+              title: `${p.name} je skladom!`,
+              body: `${p.current_price ? p.current_price + ' €' : ''} @ ${shopName}`,
+              product_id: existing.id,
+            })));
+            // Send restock emails
+            const resendKey = process.env.RESEND_API_KEY;
+            if (resendKey) {
+              for (const eu of users.filter(u => u.notify_email && u.email)) {
+                try {
+                  const priceText = p.current_price ? `${p.current_price} €` : '';
+                  await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+                    body: JSON.stringify({
+                      from: 'PokéSklad <noreply@pokesklad.sk>', to: eu.email,
+                      subject: `${p.name} je opäť skladom!`,
+                      html: `<div style="background:#0a0a1a;padding:40px;font-family:Arial"><div style="max-width:600px;margin:0 auto;background:#1a1a2e;border-radius:12px;overflow:hidden"><div style="background:#a855f7;padding:24px 32px"><h1 style="margin:0;color:#fff">PokéSklad</h1></div><div style="padding:32px"><h2 style="color:#fff">Produkt je opäť skladom!</h2><p style="color:#a855f7;font-size:18px"><strong>${p.name}</strong></p><p style="color:#d1d5db">Obchod: <strong style="color:#fff">${shopName}</strong></p><p style="color:#d1d5db">Cena: <strong style="color:#fff">${priceText}</strong></p><a href="${p.url}" style="display:inline-block;background:#a855f7;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;margin-top:16px">Zobraziť produkt</a></div></div></div>`,
+                    }),
+                  });
+                } catch (ee) { console.log(`  Email err: ${ee.message.substring(0, 60)}`); }
+              }
+            }
+          }
         }
+
+        // ─── Price drop detection ───
+        if (existing.current_price && p.current_price && p.current_price < existing.current_price) {
+          console.log(`  *** PRICE DROP: ${p.name.substring(0, 40)} ${existing.current_price}€ → ${p.current_price}€ ***`);
+          const { data: pdUsers } = await supabase.from('profiles')
+            .select('id, email, notify_email').eq('notify_in_app', true).eq('notify_price_drop', true);
+          if (pdUsers && pdUsers.length > 0) {
+            await supabase.from('notifications').insert(pdUsers.map(u => ({
+              user_id: u.id, type: 'price_drop',
+              title: `Zníženie ceny: ${p.name}`,
+              body: `${existing.current_price} € → ${p.current_price} € @ ${shopName}`,
+              product_id: existing.id,
+            })));
+            const resendKey = process.env.RESEND_API_KEY;
+            if (resendKey) {
+              const savings = Math.round((existing.current_price - p.current_price) * 100) / 100;
+              for (const eu of pdUsers.filter(u => u.notify_email && u.email)) {
+                try {
+                  await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+                    body: JSON.stringify({
+                      from: 'PokéSklad <noreply@pokesklad.sk>', to: eu.email,
+                      subject: `Zníženie ceny: ${p.name}`,
+                      html: `<div style="background:#0a0a1a;padding:40px;font-family:Arial"><div style="max-width:600px;margin:0 auto;background:#1a1a2e;border-radius:12px;overflow:hidden"><div style="background:#a855f7;padding:24px 32px"><h1 style="margin:0;color:#fff">PokéSklad</h1></div><div style="padding:32px"><h2 style="color:#fff">Zníženie ceny!</h2><p style="color:#a855f7;font-size:18px"><strong>${p.name}</strong></p><p style="color:#d1d5db">Obchod: <strong style="color:#fff">${shopName}</strong></p><p style="color:#9ca3af;text-decoration:line-through">${existing.current_price} €</p><p style="color:#22c55e;font-size:20px"><strong>${p.current_price} €</strong> (ušetríte ${savings} €)</p><a href="${p.url}" style="display:inline-block;background:#a855f7;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;margin-top:16px">Zobraziť produkt</a></div></div></div>`,
+                    }),
+                  });
+                } catch (ee) { console.log(`  Email err: ${ee.message.substring(0, 60)}`); }
+              }
+            }
+          }
+        }
+
+        // Update existing product
+        await supabase.from('products').update({
+          name: p.name, normalized_name: norm,
+          current_price: p.current_price, current_stock_status: p.current_stock_status,
+          current_stock_quantity: p.current_stock_quantity,
+          image_url: p.image_url || existing.image_url, category: p.category,
+          last_seen_at: now, updated_at: now,
+          last_in_stock_at: p.current_stock_status === 'in_stock' ? now : undefined,
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('products').upsert({
+          shop_id: p.shop_id, name: p.name, normalized_name: norm, url: p.url,
+          image_url: p.image_url, category: p.category,
+          current_price: p.current_price, current_stock_status: p.current_stock_status,
+          current_stock_quantity: p.current_stock_quantity,
+          is_tracked: true, last_seen_at: now, updated_at: now,
+          last_in_stock_at: p.current_stock_status === 'in_stock' ? now : null,
+        }, { onConflict: 'shop_id,url', ignoreDuplicates: false });
       }
     } catch (e) {
       console.log(`  ERROR: ${e.message.substring(0, 100)}`);
     }
   }
 
-  // ─── Mark stock_transitions as notified ───
   if (totalRestocks > 0) {
     await supabase.from('stock_transitions')
       .update({ notification_sent: true })
@@ -928,7 +927,7 @@ async function main() {
       .eq('new_status', 'in_stock');
   }
 
-  console.log(`\nDONE: ${totalProducts} products | ${totalRestocks} restocks`);
+  console.log(`DONE: ${totalProducts} products | ${totalRestocks} restocks`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
